@@ -1,0 +1,49 @@
+name: Build Project
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+          cache: true
+      - name: Verify generated code is up to date
+        shell: bash
+        run: |
+          if (( $(git status --porcelain=v1 2>/dev/null | wc -l) > 0 )); then
+            # Already have changes.  Skip running generate
+            exit 0
+          fi
+          go generate ./...
+          if (( $(git status --porcelain=v1 2>/dev/null | wc -l) > 0 )); then
+            echo "Generated code is out of date. Please run 'go generate ./...' and commit the changes."
+            exit 1
+          fi
+      - name: Download go modules
+        run: go mod download
+      - name: Verify checksum
+        run: go mod verify
+      - name: Build project
+        run: go build -mod=readonly ./...
+      - name: Run go tests
+        run: go test -v -coverprofile=cover.out ./...
+      - name: Test again with race detection
+        run: go test -v -race ./...
+      - name: Execute golangci-lint linter
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest

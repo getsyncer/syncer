@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/cresta/syncer/internal/cli"
 	"os"
+
+	"github.com/cresta/syncer/internal/cli"
 )
 
 func main() {

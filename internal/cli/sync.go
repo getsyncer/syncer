@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +18,7 @@ func (r *syncCmd) MakeCobraCommand() *cobra.Command {
 	}
 }
 
-func (r *syncCmd) RunE(cmd *cobra.Command, args []string) error {
+func (r *syncCmd) RunE(cmd *cobra.Command, _ []string) error {
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "Hello, world!\n")
 	return err
 }
