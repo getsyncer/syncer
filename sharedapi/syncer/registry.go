@@ -16,6 +16,10 @@ type registry struct {
 	mu      sync.Mutex
 }
 
+func NewRegistry(syncers []DriftSyncer) Registry {
+	return &registry{}
+}
+
 func (r *registry) Get(name string) (DriftSyncer, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

@@ -9,14 +9,14 @@ import (
 	"github.com/cresta/syncer/sharedapi/syncer"
 )
 
-func init() {
-	syncer.MustRegister(&Syncer{})
-}
-
 type Config struct {
 	// TODO: Figure out a way to support windows and unix paths
 	Filename string
 	Content  string
+}
+
+func New() *Syncer {
+	return &Syncer{}
 }
 
 type Syncer struct {

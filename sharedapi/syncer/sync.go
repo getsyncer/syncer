@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
-)
 
-var globalSyncer Syncer = &syncerImpl{
-	registry: &registry{},
-}
-var globalSyncerMutex sync.Mutex
+	"github.com/cresta/syncer/sharedapi/log"
+
+	"go.uber.org/fx"
+
+	"go.uber.org/zap"
+
+	"github.com/cresta/zapctx"
+)
 
 type Syncer interface {
 	Sync(ctx context.Context) error
@@ -18,27 +20,22 @@ type Syncer interface {
 	ConfigLoader() ConfigLoader
 }
 
-func Get() Syncer {
-	globalSyncerMutex.Lock()
-	defer globalSyncerMutex.Unlock()
-	return globalSyncer
-}
-
-func Set(s Syncer) Syncer {
-	globalSyncerMutex.Lock()
-	defer globalSyncerMutex.Unlock()
-	prev := s
-	globalSyncer = s
-	return prev
+func NewSyncer(registry Registry, configLoader ConfigLoader, log *zapctx.Logger) Syncer {
+	return &syncerImpl{
+		registry:     registry,
+		configLoader: configLoader,
+		log:          log,
+	}
 }
 
 type syncerImpl struct {
 	registry     Registry
-	configLoader DefaultConfigLoader
+	configLoader ConfigLoader
+	log          *zapctx.Logger
 }
 
 func (s *syncerImpl) ConfigLoader() ConfigLoader {
-	return &s.configLoader
+	return s.configLoader
 }
 
 func (s *syncerImpl) Registry() Registry {
@@ -48,18 +45,17 @@ func (s *syncerImpl) Registry() Registry {
 var _ Syncer = &syncerImpl{}
 
 func (s *syncerImpl) Sync(ctx context.Context) error {
-	fmt.Println("A")
+	s.log.Info(ctx, "Starting sync")
 	rc, err := s.configLoader.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
-	fmt.Println("B")
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
-	fmt.Println("C")
 	for _, r := range rc.Syncs {
+		s.log.Info(ctx, "Running sync", zap.String("logic", r.Logic))
 		logic, exists := s.Registry().Get(r.Logic)
 		if !exists {
 			return fmt.Errorf("logic %s not found", r.Logic)
@@ -70,7 +66,6 @@ func (s *syncerImpl) Sync(ctx context.Context) error {
 			RunConfig:             RunConfig{Node: r.Config},
 			DestinationWorkingDir: wd,
 		}
-		fmt.Println("D", logic.Name())
 		if err := logic.Run(ctx, &sr); err != nil {
 			return fmt.Errorf("error running %v: %w", logic.Name(), err)
 		}
@@ -78,15 +73,18 @@ func (s *syncerImpl) Sync(ctx context.Context) error {
 	return nil
 }
 
-func Sync() {
-	ctx := context.Background()
-	if err := Get().Sync(ctx); err != nil {
-		fmt.Println("Error: ", err)
-	}
+func DefaultFxOptions() fx.Option {
+	return fx.Module("defaults",
+		log.Module,
+		Module,
+	)
 }
 
-func MustRegister(d DriftSyncer) {
-	if err := Get().Registry().Register(d); err != nil {
-		panic(err)
-	}
+func Sync(opts ...fx.Option) {
+	var allOpts []fx.Option
+	allOpts = append(allOpts, opts...)
+	allOpts = append(allOpts, globalFxRegistryInstance.Get()...)
+	allOpts = append(allOpts, fx.Provide(newShortLivedSyncer), fx.Invoke(func(s *shortLivedSyncer) {}))
+
+	fx.New(allOpts...).Run()
 }

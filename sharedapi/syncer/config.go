@@ -25,6 +25,10 @@ type DefaultConfigLoader struct {
 	filename string
 }
 
+func NewDefaultConfigLoader() *DefaultConfigLoader {
+	return &DefaultConfigLoader{}
+}
+
 type ConfigLoader interface {
 	LoadConfig() (*RootConfig, error)
 }
