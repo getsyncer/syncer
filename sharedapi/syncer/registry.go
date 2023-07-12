@@ -17,7 +17,9 @@ type registry struct {
 }
 
 func NewRegistry(syncers []DriftSyncer) Registry {
-	return &registry{}
+	return &registry{
+		syncers: syncers,
+	}
 }
 
 func (r *registry) Get(name string) (DriftSyncer, bool) {

@@ -5,4 +5,4 @@ syncs:
     config:
       filename: sync-example.txt
       content: |
-        This is a file that will be synced
+        This is a file that will be synced v2
