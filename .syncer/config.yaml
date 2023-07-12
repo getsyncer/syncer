@@ -1,0 +1,8 @@
+logic:
+  - source: github.com/cresta/syncer/sharedapi/drift/staticfile
+syncs:
+  - logic: staticfile
+    config:
+      filename: sync-example.txt
+      content: |
+        This is a file that will be synced

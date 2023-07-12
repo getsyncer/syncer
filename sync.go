@@ -1,5 +1,0 @@
-package syncer
-
-func Run() {
-
-}
