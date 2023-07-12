@@ -19,6 +19,12 @@ func (r *syncCmd) MakeCobraCommand() *cobra.Command {
 }
 
 func (r *syncCmd) RunE(cmd *cobra.Command, _ []string) error {
+	// General steps:
+	// 1. Find the syncer file
+	// 2. Make a subdirectory
+	// 3. Create a syncer program there
+	// 4. Compile the syncer program
+	// 5. Run it
 	_, err := fmt.Fprintf(cmd.OutOrStdout(), "Hello, world!\n")
 	return err
 }

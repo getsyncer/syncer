@@ -9,6 +9,10 @@ import (
 	"github.com/cresta/syncer/sharedapi/syncer"
 )
 
+func init() {
+	syncer.MustRegister(&Syncer{})
+}
+
 type Config struct {
 	// TODO: Figure out a way to support windows and unix paths
 	Filename string
@@ -18,9 +22,9 @@ type Config struct {
 type Syncer struct {
 }
 
-func (f *Syncer) Run(ctx context.Context, runData *syncer.SyncRun) error {
+func (f *Syncer) Run(_ context.Context, runData *syncer.SyncRun) error {
 	var cfg Config
-	if err := runData.RunConfig.UnmarshalInto(&cfg); err != nil {
+	if err := runData.RunConfig.Decode(&cfg); err != nil {
 		return fmt.Errorf("failed to unmarshal staticfile config: %w", err)
 	}
 	if cfg.Filename == "" {

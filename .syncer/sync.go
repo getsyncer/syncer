@@ -1,7 +1,10 @@
 package main
 
-import "github.com/cresta/syncer/sharedapi/syncer"
+import (
+	_ "github.com/cresta/syncer/sharedapi/drift/staticfile"
+	"github.com/cresta/syncer/sharedapi/syncer"
+)
 
 func main() {
-	syncer.Run()
+	syncer.Sync()
 }
