@@ -30,7 +30,7 @@ func (f *Syncer) Run(_ context.Context, runData *syncer.SyncRun) error {
 	if cfg.Filename == "" {
 		return fmt.Errorf("filename is required")
 	}
-	// TODO: Make sub directories if required
+	// TODO: Make subdirectories if required
 	newPath := filepath.Join(runData.DestinationWorkingDir, cfg.Filename)
 	if err := os.WriteFile(newPath, []byte(cfg.Content), 0644); err != nil {
 		return fmt.Errorf("failed to write staticfile: %w", err)

@@ -17,8 +17,10 @@ type ConfigSyncs struct {
 }
 
 type RootConfig struct {
-	Logic []ConfigLogic `yaml:"logic"`
-	Syncs []ConfigSyncs `yaml:"syncs"`
+	Version int           `yaml:"version"`
+	Config  yaml.Node     `yaml:"config"`
+	Logic   []ConfigLogic `yaml:"logic"`
+	Syncs   []ConfigSyncs `yaml:"syncs"`
 }
 
 type DefaultConfigLoader struct {
