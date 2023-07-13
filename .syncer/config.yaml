@@ -19,4 +19,4 @@ syncs:
       filename: sync-example.txt
       content: |
         This is a file that will be synced v2
-#  - logic: autoapprove
+  - logic: autoapprove

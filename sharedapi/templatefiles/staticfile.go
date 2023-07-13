@@ -8,6 +8,10 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"go.uber.org/zap"
+
+	"github.com/cresta/zapctx"
+
 	"github.com/Masterminds/sprig/v3"
 	"github.com/cresta/syncer/sharedapi/syncer"
 	"go.uber.org/fx"
@@ -18,12 +22,13 @@ type TemplateData struct {
 	Config  interface{}
 }
 
-func NewGenerator(files map[string]*template.Template, name string, priority int, decoder Decoder) *Generator {
+func NewGenerator(files map[string]*template.Template, name string, priority int, decoder Decoder, logger *zapctx.Logger) *Generator {
 	return &Generator{
 		files:    files,
 		name:     name,
 		priority: priority,
 		decoder:  decoder,
+		logger:   logger,
 	}
 }
 
@@ -34,8 +39,8 @@ func NewModule(name string, files map[string]string, priority int, decoder Decod
 	for k, v := range files {
 		tmpls[k] = template.Must(template.New(k).Funcs(sprig.TxtFuncMap()).Parse(v))
 	}
-	constructor := func() *Generator {
-		return NewGenerator(tmpls, name, priority, decoder)
+	constructor := func(logger *zapctx.Logger) *Generator {
+		return NewGenerator(tmpls, name, priority, decoder, logger)
 	}
 	return fx.Module(name,
 		fx.Provide(
@@ -53,6 +58,7 @@ type Generator struct {
 	name     string
 	priority int
 	decoder  func(syncer.RunConfig) (interface{}, error)
+	logger   *zapctx.Logger
 }
 
 func (f *Generator) Run(ctx context.Context, runData *syncer.SyncRun) error {
@@ -68,7 +74,8 @@ func (f *Generator) Run(ctx context.Context, runData *syncer.SyncRun) error {
 	return nil
 }
 
-func (f *Generator) generate(_ context.Context, runData *syncer.SyncRun, config interface{}, tmpl *template.Template, destination string) error {
+func (f *Generator) generate(ctx context.Context, runData *syncer.SyncRun, config interface{}, tmpl *template.Template, destination string) error {
+	f.logger.Debug(ctx, "generating template", zap.String("destination", destination), zap.Any("config", config))
 	pathDir := filepath.Dir(destination)
 	if err := os.MkdirAll(pathDir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", pathDir, err)

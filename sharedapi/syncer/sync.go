@@ -50,12 +50,13 @@ func (s *syncerImpl) Sync(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
+	s.log.Debug(ctx, "Loaded config", zap.Any("config", rc))
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 	for _, r := range rc.Syncs {
-		s.log.Info(ctx, "Running sync", zap.String("logic", r.Logic))
+		s.log.Info(ctx, "Running sync", zap.String("logic", r.Logic), zap.Any("run-cfg", r.Config))
 		logic, exists := s.Registry().Get(r.Logic)
 		if !exists {
 			return fmt.Errorf("logic %s not found", r.Logic)
