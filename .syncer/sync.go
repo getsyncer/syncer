@@ -5,7 +5,7 @@ import (
 	"github.com/cresta/syncer/sharedapi/syncer"
 )
 
-// TODO: Synth this file and run it from the CLI
+// TODO: Create this file on demand when running the `syncer` CLI rather than force it to already exist
 func main() {
 	syncer.Sync(syncer.DefaultFxOptions())
 }

@@ -3,6 +3,7 @@ module github.com/cresta/syncer
 go 1.20
 
 require (
+	github.com/cresta/pipe v0.0.1
 	github.com/cresta/zapctx v0.0.3
 	github.com/spf13/cobra v1.7.0
 	go.uber.org/fx v1.20.0
@@ -11,6 +12,7 @@ require (
 )
 
 require (
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect

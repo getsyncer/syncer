@@ -3,24 +3,17 @@ version: 1
 # General, shared config.  It is up to the logic to decide what to do with this
 config:
   name: "syncer"
+  primaryOwner: "infra-squad"
 
 # The logic to use for syncing.  Each logic can be used [0..N] times (never, once, or many).
 # Each logic will become an `import _ "..."` statement inside the generated sync file and expects to have a init()
 # function that will register syncing logic
 logic:
   - source: github.com/cresta/syncer/sharedapi/drift/staticfile
-  - source: github.com/cresta/syncer/sharedapi/drift/inherited
+
 
 # The syncs to run.  Each sync will be run in order.
 syncs:
-  - logic: inherited # The short name of which logic (of the listed above) to use
-    # The config for the logic.  This is up to the logic to decide what to do with it.
-    config:
-      location: https://raw.githubusercontent.com/cep21/circuit/master/README.md
-  - logic: codeowners
-    config:
-      owners:
-        - "* @cresta/infrastructure"
   - logic: staticfile
     config:
       filename: sync-example.txt

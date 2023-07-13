@@ -1,8 +1,10 @@
 package syncer
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -13,6 +15,7 @@ type ConfigLogic struct {
 
 type ConfigSyncs struct {
 	Logic  string    `yaml:"logic"`
+	Name   string    `yaml:"name"`
 	Config yaml.Node `yaml:"config"`
 }
 
@@ -32,7 +35,7 @@ func NewDefaultConfigLoader() *DefaultConfigLoader {
 }
 
 type ConfigLoader interface {
-	LoadConfig() (*RootConfig, error)
+	LoadConfig(ctx context.Context, filename string) (*RootConfig, error)
 }
 
 var _ ConfigLoader = &DefaultConfigLoader{}
@@ -41,30 +44,45 @@ func (c *DefaultConfigLoader) findConfigFile() (string, error) {
 	if c.filename != "" {
 		return c.filename, nil
 	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get working directory: %w", err)
+	}
+	return DefaultFindConfigFile(wd)
+}
+
+func DefaultFindConfigFile(wd string) (string, error) {
 	possibleLocations := []string{
 		".syncer/config.yaml",
 		".syncer.yaml",
 	}
 	for _, loc := range possibleLocations {
-		if _, err := os.Stat(loc); err == nil {
+		fileLoc := filepath.Join(wd, loc)
+		if _, err := os.Stat(fileLoc); err == nil {
 			return loc, nil
 		}
 	}
 	return "", fmt.Errorf("no config file found")
 }
 
-func (c *DefaultConfigLoader) LoadConfig() (*RootConfig, error) {
-	fileName, err := c.findConfigFile()
-	if err != nil {
-		return nil, fmt.Errorf("failed to find config file: %w", err)
+func (c *DefaultConfigLoader) LoadConfig(_ context.Context, filename string) (*RootConfig, error) {
+	if filename == "" {
+		fileName, err := c.findConfigFile()
+		if err != nil {
+			return nil, fmt.Errorf("failed to find config file: %w", err)
+		}
+		filename = fileName
 	}
-	content, err := os.ReadFile(fileName)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 	var root RootConfig
 	if err := yaml.Unmarshal(content, &root); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config file: %w", err)
+	}
+	if root.Version != 1 {
+		return nil, fmt.Errorf("unknown config version: %d", root.Version)
 	}
 	return &root, nil
 }

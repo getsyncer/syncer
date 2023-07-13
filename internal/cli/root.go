@@ -14,9 +14,12 @@ func (r *rootCmd) MakeCobraCommand() *cobra.Command {
 	}
 }
 
-func WireRootCommand() *cobra.Command {
-	r := &rootCmd{}
+func newRootCommand() *rootCmd {
+	return &rootCmd{}
+}
+
+func RootCobraCommand(r *rootCmd, s *syncCmd) *cobra.Command {
 	ret := r.MakeCobraCommand()
-	ret.AddCommand(generateSyncCommand())
+	ret.AddCommand(s.MakeCobraCommand())
 	return ret
 }

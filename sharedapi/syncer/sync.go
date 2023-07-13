@@ -46,7 +46,7 @@ var _ Syncer = &syncerImpl{}
 
 func (s *syncerImpl) Sync(ctx context.Context) error {
 	s.log.Info(ctx, "Starting sync")
-	rc, err := s.configLoader.LoadConfig()
+	rc, err := s.configLoader.LoadConfig(ctx, "")
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
@@ -82,6 +82,7 @@ func DefaultFxOptions() fx.Option {
 
 func Sync(opts ...fx.Option) {
 	var allOpts []fx.Option
+	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger))
 	allOpts = append(allOpts, opts...)
 	allOpts = append(allOpts, globalFxRegistryInstance.Get()...)
 	allOpts = append(allOpts, fx.Provide(newShortLivedSyncer), fx.Invoke(func(s *shortLivedSyncer) {}))
