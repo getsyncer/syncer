@@ -63,7 +63,7 @@ func (f *Generator) Run(ctx context.Context, runData *syncer.SyncRun) error {
 	return nil
 }
 
-func (f *Generator) generate(_ context.Context, runData *syncer.SyncRun, config interface{}, tmpl template.Template, destination string) error {
+func (f *Generator) generate(_ context.Context, runData *syncer.SyncRun, config interface{}, tmpl *template.Template, destination string) error {
 	pathDir := filepath.Dir(destination)
 	if err := os.MkdirAll(pathDir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", pathDir, err)
