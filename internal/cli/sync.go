@@ -76,6 +76,12 @@ func (r *syncCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 	if err := os.WriteFile(syncFilePath, syncerProg.Bytes(), 0644); err != nil {
 		return fmt.Errorf("failed to write syncer file: %w", err)
 	}
+	if r.logger.Unwrap(ctx).Level() <= zap.DebugLevel {
+		r.logger.Debug(ctx, "Printing syncer file to stderr")
+		if _, err := syncerProg.WriteTo(os.Stderr); err != nil {
+			return fmt.Errorf("failed to write syncer file to stderr: %w", err)
+		}
+	}
 	// 3a. Run "go get github.com/a/b" a bunch of times
 	for _, l := range rc.Logic {
 		r.logger.Debug(ctx, "Running go get", zap.String("package", l.Source))
@@ -132,7 +138,7 @@ package main
 
 import (
 {{ range $val := .Logic }}
-     _ "{{$val.Source}}"
+     _ "{{$val.SourceWithoutVersion}}"
 {{ end }}
 	"github.com/cresta/syncer/sharedapi/syncer"
 )

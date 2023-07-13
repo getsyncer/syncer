@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/cresta/syncer/internal/fxcli"
 	"go.uber.org/fx"
 )
 
@@ -49,40 +50,27 @@ func FxRegister(opt fx.Option) {
 	globalFxRegistryInstance.Register(opt)
 }
 
-type shortLivedSyncer struct {
+var ExecuteCliModule = fx.Module(
+	"main",
+	fx.Provide(
+		fx.Annotate(
+			NewFxCli,
+			fx.As(new(fxcli.Main)),
+		),
+	),
+)
+
+type FxCli struct {
 	syncer Syncer
-	sh     fx.Shutdowner
 }
 
-func newShortLivedSyncer(syncer Syncer, lc fx.Lifecycle, sh fx.Shutdowner) *shortLivedSyncer {
-	ret := &shortLivedSyncer{
-		sh:     sh,
-		syncer: syncer,
-	}
-
-	lc.Append(fx.Hook{
-		OnStart: ret.start,
-		OnStop:  ret.stop,
-	})
-
-	return ret
+func NewFxCli(syncer Syncer) *FxCli {
+	return &FxCli{syncer: syncer}
 }
 
-func (s *shortLivedSyncer) start(_ context.Context) error {
-	go s.run()
-	return nil
-}
-
-func (s *shortLivedSyncer) stop(_ context.Context) error {
-	return nil
-}
-
-func (s *shortLivedSyncer) run() {
+func (f *FxCli) Run() {
 	ctx := context.Background()
-	if err := s.syncer.Sync(ctx); err != nil {
+	if err := f.syncer.Sync(ctx); err != nil {
 		fmt.Println("Error: ", err)
-	}
-	if err := s.sh.Shutdown(); err != nil {
-		panic(err)
 	}
 }

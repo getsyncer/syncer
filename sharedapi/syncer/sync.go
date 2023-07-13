@@ -85,7 +85,7 @@ func Sync(opts ...fx.Option) {
 	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger))
 	allOpts = append(allOpts, opts...)
 	allOpts = append(allOpts, globalFxRegistryInstance.Get()...)
-	allOpts = append(allOpts, fx.Provide(newShortLivedSyncer), fx.Invoke(func(s *shortLivedSyncer) {}))
+	allOpts = append(allOpts, ExecuteCliModule)
 
 	fx.New(allOpts...).Run()
 }
