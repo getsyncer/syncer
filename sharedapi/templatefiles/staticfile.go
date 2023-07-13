@@ -17,7 +17,7 @@ type TemplateData struct {
 	Config  interface{}
 }
 
-func NewGenerator(files map[string]template.Template, name string, priority int, decoder Decoder) *Generator {
+func NewGenerator(files map[string]*template.Template, name string, priority int, decoder Decoder) *Generator {
 	return &Generator{
 		files:    files,
 		name:     name,
@@ -28,7 +28,7 @@ func NewGenerator(files map[string]template.Template, name string, priority int,
 
 type Decoder func(syncer.RunConfig) (interface{}, error)
 
-func NewModule(name string, files map[string]template.Template, priority int, decoder Decoder) fx.Option {
+func NewModule(name string, files map[string]*template.Template, priority int, decoder Decoder) fx.Option {
 	constructor := func() *Generator {
 		return NewGenerator(files, name, priority, decoder)
 	}
@@ -44,7 +44,7 @@ func NewModule(name string, files map[string]template.Template, priority int, de
 }
 
 type Generator struct {
-	files    map[string]template.Template
+	files    map[string]*template.Template
 	name     string
 	priority int
 	decoder  func(syncer.RunConfig) (interface{}, error)
