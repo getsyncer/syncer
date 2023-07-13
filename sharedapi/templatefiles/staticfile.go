@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/cresta/syncer/sharedapi/syncer"
 	"go.uber.org/fx"
 )
@@ -28,9 +29,13 @@ func NewGenerator(files map[string]*template.Template, name string, priority int
 
 type Decoder func(syncer.RunConfig) (interface{}, error)
 
-func NewModule(name string, files map[string]*template.Template, priority int, decoder Decoder) fx.Option {
+func NewModule(name string, files map[string]string, priority int, decoder Decoder) fx.Option {
+	tmpls := make(map[string]*template.Template)
+	for k, v := range files {
+		tmpls[k] = template.Must(template.New(k).Funcs(sprig.TxtFuncMap()).Parse(v))
+	}
 	constructor := func() *Generator {
-		return NewGenerator(files, name, priority, decoder)
+		return NewGenerator(tmpls, name, priority, decoder)
 	}
 	return fx.Module(name,
 		fx.Provide(
@@ -73,7 +78,7 @@ func (f *Generator) generate(_ context.Context, runData *syncer.SyncRun, config 
 		Config:  config,
 	}
 	var into bytes.Buffer
-	if err := tmpl.Execute(&into, d); err != nil {
+	if err := tmpl.Funcs(sprig.FuncMap()).Execute(&into, d); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 	if err := os.WriteFile(destination, into.Bytes(), 0644); err != nil {
