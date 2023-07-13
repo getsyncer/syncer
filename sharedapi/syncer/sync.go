@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cresta/syncer/internal/fxcli"
-
 	"github.com/cresta/syncer/sharedapi/log"
 
 	"go.uber.org/fx"
@@ -84,7 +82,7 @@ func DefaultFxOptions() fx.Option {
 
 func Sync(opts ...fx.Option) {
 	var allOpts []fx.Option
-	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger), fxcli.Module)
+	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger))
 	allOpts = append(allOpts, opts...)
 	allOpts = append(allOpts, globalFxRegistryInstance.Get()...)
 	allOpts = append(allOpts, ExecuteCliModule)

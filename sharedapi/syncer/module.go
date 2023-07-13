@@ -52,6 +52,7 @@ func FxRegister(opt fx.Option) {
 
 var ExecuteCliModule = fx.Module(
 	"main",
+	fxcli.Module,
 	fx.Provide(
 		fx.Annotate(
 			NewFxCli,
