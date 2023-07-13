@@ -56,7 +56,7 @@ func (s *syncerImpl) Sync(ctx context.Context) error {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 	for _, r := range rc.Syncs {
-		s.log.Info(ctx, "Running sync", zap.String("logic", r.Logic), zap.Any("run-cfg", r.Config))
+		s.log.Debug(ctx, "Running sync", zap.String("logic", r.Logic), zap.Any("run-cfg", r.Config))
 		logic, exists := s.Registry().Get(r.Logic)
 		if !exists {
 			return fmt.Errorf("logic %s not found", r.Logic)
