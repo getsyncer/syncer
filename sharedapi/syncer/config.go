@@ -38,7 +38,7 @@ type ConfigSyncs struct {
 
 type RootConfig struct {
 	Version int           `yaml:"version"`
-	Config  yaml.Node     `yaml:"config"`
+	Config  RunConfig     `yaml:"config"`
 	Logic   []ConfigLogic `yaml:"logic"`
 	Syncs   []ConfigSyncs `yaml:"syncs"`
 }

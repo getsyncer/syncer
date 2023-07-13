@@ -10,7 +10,7 @@ config:
 # function that will register syncing logic
 logic:
   - source: github.com/cresta/syncer/sharedapi/drift/staticfile
-
+  - source: github.com/cresta/sync-autoapprove
 
 # The syncs to run.  Each sync will be run in order.
 syncs:
@@ -19,3 +19,4 @@ syncs:
       filename: sync-example.txt
       content: |
         This is a file that will be synced v2
+  - logic: autoapprove
