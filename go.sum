@@ -19,8 +19,6 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/cresta/magehelper v0.0.56/go.mod h1:yXPw5SVc3lOdsxOeqd7WbMHD+UZDYcpUunUcPa9CVgk=
 github.com/cresta/pipe v0.0.1 h1:LsAAmKqt0CLQ6OJgTcmk5xCAHlX+VFLE5xr/LG1OHMA=
 github.com/cresta/pipe v0.0.1/go.mod h1:4FI1ZPReIyNl1t+KkYVVI2a5ML+iNlO94kJ+Mk6MukE=
-github.com/cresta/sync-autoapprove v0.0.0-20230713233542-e707f6bae2ac h1:tMq0rr0yJa+ZG3mPKQjEb+352hLkc1EmUmL0TWlzEXs=
-github.com/cresta/sync-autoapprove v0.0.0-20230713233542-e707f6bae2ac/go.mod h1:KW2I1dOf7X/7WmYMI5Lqqk0r5sbcBOirZ67+C6s8vg4=
 github.com/cresta/zapctx v0.0.3 h1:787OCBdKJtqd+/91GKPslyuLRYe5V6+ntZO8G9zCL4g=
 github.com/cresta/zapctx v0.0.3/go.mod h1:A8g9eMLauIcd33USu16CNANWy2X9XFKRrskmE8IGDyM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
