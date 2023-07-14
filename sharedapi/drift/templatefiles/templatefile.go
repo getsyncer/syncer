@@ -20,25 +20,29 @@ type TemplateData[T any] struct {
 	Config  T
 }
 
-func NewGenerator[T any](files map[string]*template.Template, name string, priority int, decoder Decoder[T], logger *zapctx.Logger) *Generator[T] {
+func NewGenerator[T any](files map[string]string, name string, priority int, decoder Decoder[T], logger *zapctx.Logger) (*Generator[T], error) {
+	generatedTemplates := make(map[string]*template.Template, len(files))
+	for k, v := range files {
+		tmpl, err := template.New(k).Funcs(sprig.TxtFuncMap()).Parse(v)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse template %q: %w", k, err)
+		}
+		generatedTemplates[k] = tmpl
+	}
 	return &Generator[T]{
-		files:    files,
+		files:    generatedTemplates,
 		name:     name,
 		priority: priority,
 		decoder:  decoder,
 		logger:   logger,
-	}
+	}, nil
 }
 
 type Decoder[T any] func(syncer.RunConfig) (T, error)
 
 func NewModule[T any](name string, files map[string]string, priority int, decoder Decoder[T]) fx.Option {
-	tmpls := make(map[string]*template.Template)
-	for k, v := range files {
-		tmpls[k] = template.Must(template.New(k).Funcs(sprig.TxtFuncMap()).Parse(v))
-	}
-	constructor := func(logger *zapctx.Logger) *Generator[T] {
-		return NewGenerator(tmpls, name, priority, decoder, logger)
+	constructor := func(logger *zapctx.Logger) (*Generator[T], error) {
+		return NewGenerator(files, name, priority, decoder, logger)
 	}
 	return fx.Module(name,
 		fx.Provide(
