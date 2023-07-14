@@ -8,22 +8,20 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"go.uber.org/zap"
-
-	"github.com/cresta/zapctx"
-
 	"github.com/Masterminds/sprig/v3"
 	"github.com/cresta/syncer/sharedapi/syncer"
+	"github.com/cresta/zapctx"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
-type TemplateData struct {
+type TemplateData[T any] struct {
 	RunData *syncer.SyncRun
-	Config  interface{}
+	Config  T
 }
 
-func NewGenerator(files map[string]*template.Template, name string, priority int, decoder Decoder, logger *zapctx.Logger) *Generator {
-	return &Generator{
+func NewGenerator[T any](files map[string]*template.Template, name string, priority int, decoder Decoder[T], logger *zapctx.Logger) *Generator[T] {
+	return &Generator[T]{
 		files:    files,
 		name:     name,
 		priority: priority,
@@ -32,14 +30,14 @@ func NewGenerator(files map[string]*template.Template, name string, priority int
 	}
 }
 
-type Decoder func(syncer.RunConfig) (interface{}, error)
+type Decoder[T any] func(syncer.RunConfig) (T, error)
 
-func NewModule(name string, files map[string]string, priority int, decoder Decoder) fx.Option {
+func NewModule[T any](name string, files map[string]string, priority int, decoder Decoder[T]) fx.Option {
 	tmpls := make(map[string]*template.Template)
 	for k, v := range files {
 		tmpls[k] = template.Must(template.New(k).Funcs(sprig.TxtFuncMap()).Parse(v))
 	}
-	constructor := func(logger *zapctx.Logger) *Generator {
+	constructor := func(logger *zapctx.Logger) *Generator[T] {
 		return NewGenerator(tmpls, name, priority, decoder, logger)
 	}
 	return fx.Module(name,
@@ -53,18 +51,28 @@ func NewModule(name string, files map[string]string, priority int, decoder Decod
 	)
 }
 
-type Generator struct {
+type ConfigMutator[T any] func(T) T
+
+type Generator[T any] struct {
 	files    map[string]*template.Template
 	name     string
 	priority int
-	decoder  func(syncer.RunConfig) (interface{}, error)
+	decoder  func(syncer.RunConfig) (T, error)
+	mutators []ConfigMutator[T]
 	logger   *zapctx.Logger
 }
 
-func (f *Generator) Run(ctx context.Context, runData *syncer.SyncRun) error {
+func (f *Generator[T]) AddMutator(mutator ConfigMutator[T]) {
+	f.mutators = append(f.mutators, mutator)
+}
+
+func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) error {
 	cfg, err := f.decoder(runData.RunConfig)
 	if err != nil {
 		return fmt.Errorf("unable to decode config: %w", err)
+	}
+	for _, v := range f.mutators {
+		cfg = v(cfg)
 	}
 	for k, v := range f.files {
 		if err := f.generate(ctx, runData, cfg, v, k); err != nil {
@@ -74,13 +82,13 @@ func (f *Generator) Run(ctx context.Context, runData *syncer.SyncRun) error {
 	return nil
 }
 
-func (f *Generator) generate(ctx context.Context, runData *syncer.SyncRun, config interface{}, tmpl *template.Template, destination string) error {
+func (f *Generator[T]) generate(ctx context.Context, runData *syncer.SyncRun, config T, tmpl *template.Template, destination string) error {
 	f.logger.Debug(ctx, "generating template", zap.String("destination", destination), zap.Any("config", config))
 	pathDir := filepath.Dir(destination)
 	if err := os.MkdirAll(pathDir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", pathDir, err)
 	}
-	d := TemplateData{
+	d := TemplateData[T]{
 		RunData: runData,
 		Config:  config,
 	}
@@ -94,12 +102,12 @@ func (f *Generator) generate(ctx context.Context, runData *syncer.SyncRun, confi
 	return nil
 }
 
-func (f *Generator) Name() string {
+func (f *Generator[T]) Name() string {
 	return f.name
 }
 
-func (f *Generator) Priority() int {
+func (f *Generator[T]) Priority() int {
 	return f.priority
 }
 
-var _ syncer.DriftSyncer = &Generator{}
+var _ syncer.DriftSyncer = &Generator[any]{}
