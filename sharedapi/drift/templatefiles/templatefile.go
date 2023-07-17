@@ -107,8 +107,9 @@ func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files
 		}
 		if err := ret.Add(files.Path(k), &files.StateWithChangeReason{
 			State: files.State{
-				Contents: []byte(fileContent),
-				Mode:     0644,
+				Contents:      []byte(fileContent),
+				Mode:          0644,
+				FileExistence: files.FileExistencePresent,
 			},
 			ChangeReason: &files.ChangeReason{
 				Reason: "template",
