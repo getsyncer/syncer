@@ -21,6 +21,9 @@ type TemplateData[T any] struct {
 }
 
 func NewGenerator[T any](files map[string]string, name string, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer) (*Generator[T], error) {
+	if name == "" {
+		return nil, fmt.Errorf("name must be set")
+	}
 	generatedTemplates := make(map[string]*template.Template, len(files))
 	for k, v := range files {
 		tmpl, err := template.New(k).Funcs(sprig.TxtFuncMap()).Parse(v)
@@ -41,11 +44,19 @@ func NewGenerator[T any](files map[string]string, name string, priority syncer.P
 
 type Decoder[T any] func(syncer.RunConfig) (T, error)
 
-func NewModule[T any](name string, files map[string]string, priority syncer.Priority, decoder Decoder[T], setupLogic syncer.SetupSyncer) fx.Option {
+type NewModuleConfig[T any] struct {
+	Name     string
+	Files    map[string]string
+	Priority syncer.Priority
+	Decoder  Decoder[T]
+	Setup    syncer.SetupSyncer
+}
+
+func NewModule[T any](config NewModuleConfig[T]) fx.Option {
 	constructor := func(logger *zapctx.Logger) (*Generator[T], error) {
-		return NewGenerator(files, name, priority, decoder, logger, setupLogic)
+		return NewGenerator(config.Files, config.Name, config.Priority, config.Decoder, logger, config.Setup)
 	}
-	return fx.Module(name,
+	return fx.Module(config.Name,
 		fx.Provide(
 			fx.Annotate(
 				constructor,
