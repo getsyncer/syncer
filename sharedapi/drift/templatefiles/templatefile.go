@@ -15,12 +15,12 @@ import (
 	"go.uber.org/zap"
 )
 
-type TemplateData[T any] struct {
+type TemplateData[T TemplateConfig] struct {
 	RunData *syncer.SyncRun
 	Config  T
 }
 
-func NewGenerator[T any](files map[string]string, name string, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer) (*Generator[T], error) {
+func NewGenerator[T TemplateConfig](files map[string]string, name string, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer) (*Generator[T], error) {
 	if name == "" {
 		return nil, fmt.Errorf("name must be set")
 	}
@@ -42,9 +42,9 @@ func NewGenerator[T any](files map[string]string, name string, priority syncer.P
 	}, nil
 }
 
-type Decoder[T any] func(syncer.RunConfig) (T, error)
+type Decoder[T TemplateConfig] func(syncer.RunConfig) (T, error)
 
-type NewModuleConfig[T any] struct {
+type NewModuleConfig[T TemplateConfig] struct {
 	Name     string
 	Files    map[string]string
 	Priority syncer.Priority
@@ -52,7 +52,7 @@ type NewModuleConfig[T any] struct {
 	Setup    syncer.SetupSyncer
 }
 
-func NewModule[T any](config NewModuleConfig[T]) fx.Option {
+func NewModule[T TemplateConfig](config NewModuleConfig[T]) fx.Option {
 	constructor := func(logger *zapctx.Logger) (*Generator[T], error) {
 		return NewGenerator(config.Files, config.Name, config.Priority, config.Decoder, logger, config.Setup)
 	}
@@ -67,9 +67,27 @@ func NewModule[T any](config NewModuleConfig[T]) fx.Option {
 	)
 }
 
-type ConfigMutator[T any] func(T) T
+type ConfigMutator[T TemplateConfig] func(T) T
 
-type Generator[T any] struct {
+func DefaultDecoder[T TemplateConfig]() func(runConfig syncer.RunConfig) (T, error) {
+	return func(runConfig syncer.RunConfig) (T, error) {
+		var cfg T
+		if err := runConfig.Decode(&cfg); err != nil {
+			return cfg, err
+		}
+		return cfg, nil
+	}
+}
+
+type TemplateConfig interface {
+}
+
+type MergableConfig interface {
+	// Merge into this object the defaults (if not set inside this object)
+	Merge(defaults MergableConfig)
+}
+
+type Generator[T TemplateConfig] struct {
 	files      map[string]*template.Template
 	name       string
 	priority   syncer.Priority
@@ -144,5 +162,5 @@ func (f *Generator[T]) Priority() syncer.Priority {
 	return f.priority
 }
 
-var _ syncer.DriftSyncer = &Generator[any]{}
-var _ syncer.SetupSyncer = &Generator[any]{}
+var _ syncer.DriftSyncer = &Generator[TemplateConfig]{}
+var _ syncer.SetupSyncer = &Generator[TemplateConfig]{}
