@@ -137,7 +137,7 @@ func DefaultFxOptions() fx.Option {
 	)
 }
 
-func Sync(opts ...fx.Option) {
+func Apply(opts ...fx.Option) {
 	var allOpts []fx.Option
 	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger))
 	allOpts = append(allOpts, opts...)
