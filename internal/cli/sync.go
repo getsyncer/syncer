@@ -144,6 +144,6 @@ import (
 )
 
 func main() {
-	syncer.Sync(syncer.DefaultFxOptions())
+	syncer.Apply(syncer.DefaultFxOptions())
 }
 `

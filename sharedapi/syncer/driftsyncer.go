@@ -1,6 +1,10 @@
 package syncer
 
-import "context"
+import (
+	"context"
+
+	"github.com/cresta/syncer/sharedapi/files"
+)
 
 type Priority int
 
@@ -13,7 +17,17 @@ const (
 )
 
 type DriftSyncer interface {
-	Run(ctx context.Context, runData *SyncRun) error
+	Run(ctx context.Context, runData *SyncRun) (*files.System[*files.StateWithChangeReason], error)
 	Name() string
-	Priority() int
+	Priority() Priority
+}
+
+type SetupSyncer interface {
+	Setup(ctx context.Context, runData *SyncRun) error
+}
+
+type SetupSyncerFunc func(ctx context.Context, runData *SyncRun) error
+
+func (s SetupSyncerFunc) Setup(ctx context.Context, runData *SyncRun) error {
+	return s(ctx, runData)
 }

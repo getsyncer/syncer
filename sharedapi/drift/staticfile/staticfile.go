@@ -3,8 +3,8 @@ package staticfile
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
+
+	"github.com/cresta/syncer/sharedapi/files"
 
 	"github.com/cresta/syncer/sharedapi/syncer"
 )
@@ -22,27 +22,36 @@ func New() *Syncer {
 type Syncer struct {
 }
 
-func (f *Syncer) Run(_ context.Context, runData *syncer.SyncRun) error {
+func (f *Syncer) Run(_ context.Context, runData *syncer.SyncRun) (*files.System[*files.StateWithChangeReason], error) {
 	var cfg Config
 	if err := runData.RunConfig.Decode(&cfg); err != nil {
-		return fmt.Errorf("failed to unmarshal staticfile config: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal staticfile config: %w", err)
 	}
 	if cfg.Filename == "" {
-		return fmt.Errorf("filename is required")
+		return nil, fmt.Errorf("filename is required")
 	}
-	// TODO: Make subdirectories if required
-	newPath := filepath.Join(runData.DestinationWorkingDir, cfg.Filename)
-	if err := os.WriteFile(newPath, []byte(cfg.Content), 0644); err != nil {
-		return fmt.Errorf("failed to write staticfile: %w", err)
+	var ret files.System[*files.StateWithChangeReason]
+	path := cfg.Filename
+	if err := ret.Add(files.Path(cfg.Filename), &files.StateWithChangeReason{
+		ChangeReason: &files.ChangeReason{
+			Reason: "staticfile",
+		},
+		State: files.State{
+			Mode:          0644,
+			Contents:      []byte(cfg.Content),
+			FileExistence: files.FileExistencePresent,
+		},
+	}); err != nil {
+		return nil, fmt.Errorf("failed to add file %q: %w", path, err)
 	}
-	return nil
+	return &ret, nil
 }
 
 func (f *Syncer) Name() string {
 	return "staticfile"
 }
 
-func (f *Syncer) Priority() int {
+func (f *Syncer) Priority() syncer.Priority {
 	return syncer.PriorityNormal
 }
 

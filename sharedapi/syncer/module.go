@@ -71,7 +71,7 @@ func NewFxCli(syncer Syncer) *FxCli {
 
 func (f *FxCli) Run() {
 	ctx := context.Background()
-	if err := f.syncer.Sync(ctx); err != nil {
+	if err := f.syncer.Apply(ctx); err != nil {
 		fmt.Println("Error: ", err)
 	}
 }
