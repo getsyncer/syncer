@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cresta/syncer/sharedapi/files/osfiles"
+
 	"github.com/cresta/syncer/sharedapi/files"
 
 	"github.com/cresta/syncer/sharedapi/log"
@@ -139,7 +141,7 @@ func DefaultFxOptions() fx.Option {
 
 func Apply(opts ...fx.Option) {
 	var allOpts []fx.Option
-	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger))
+	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger), osfiles.Module)
 	allOpts = append(allOpts, opts...)
 	allOpts = append(allOpts, globalFxRegistryInstance.Get()...)
 	allOpts = append(allOpts, ExecuteCliModule)
