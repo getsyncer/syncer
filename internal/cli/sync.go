@@ -95,7 +95,8 @@ func (r *syncCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 	}
 	// 4. Compile the syncer program (go build .)
 	r.logger.Debug(ctx, "Running go build")
-	if err := pipe.NewPiped("go", "build", "-o", "syncer", "sync.go").WithDir(td).Run(ctx); err != nil {
+	// Run go build with tag "syncer"
+	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", "syncer", "sync.go").WithDir(td).Run(ctx); err != nil {
 		return fmt.Errorf("failed to build syncer: %w", err)
 	}
 	// 5. Run it ( ./sync) inside this git repo's working directory
@@ -133,7 +134,9 @@ func newSyncCommand(logger *zapctx.Logger, git git.Git, loader syncer.ConfigLoad
 
 var syncerTemplate = template.Must(template.New("syncer").Parse(defaultSyncerFile))
 
-const defaultSyncerFile = `
+const defaultSyncerFile = `//go:build syncer
+// +build syncer
+
 package main
 
 import (

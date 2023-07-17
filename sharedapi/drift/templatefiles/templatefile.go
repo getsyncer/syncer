@@ -91,6 +91,7 @@ func (f *Generator[T]) AddMutator(mutator ConfigMutator[T]) {
 }
 
 func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files.System[*files.StateWithChangeReason], error) {
+	f.logger.Debug(ctx, "running templatefile", zap.String("name", f.name))
 	cfg, err := f.decoder(runData.RunConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to decode config: %w", err)
@@ -100,6 +101,7 @@ func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files
 	}
 	var ret files.System[*files.StateWithChangeReason]
 	for k, v := range f.files {
+		f.logger.Debug(ctx, "generating template", zap.String("destination", k))
 		var err error
 		var fileContent string
 		if fileContent, err = f.generate(ctx, runData, cfg, v, k); err != nil {

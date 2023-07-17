@@ -84,6 +84,19 @@ const (
 	FileExistenceAbsent
 )
 
+func (e Existence) String() string {
+	switch e {
+	case FileExistenceUnset:
+		return "unset"
+	case FileExistencePresent:
+		return "present"
+	case FileExistenceAbsent:
+		return "absent"
+	default:
+		panic("BUG: unknown existence")
+	}
+}
+
 func NewStateFromPath(path Path) (*State, error) {
 	pathStr := path.String()
 	var ret State

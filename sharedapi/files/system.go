@@ -3,6 +3,9 @@ package files
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
+
+	"go.uber.org/zap/zapcore"
 )
 
 type Path string
@@ -41,11 +44,37 @@ func (f *System[T]) Add(path Path, state T) error {
 	return nil
 }
 
+func (f *System[T]) MarshalLogObject(e zapcore.ObjectEncoder) error {
+	if err := e.AddArray("paths", zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+		for _, path := range f.Paths() {
+			file := f.Get(path)
+			if err := enc.AppendObject(zapcore.ObjectMarshalerFunc(func(enc zapcore.ObjectEncoder) error {
+				enc.AddString("path", string(path))
+				if err := enc.AddReflected("state", file); err != nil {
+					return fmt.Errorf("failed to marshal state: %w", err)
+				}
+				return nil
+			})); err != nil {
+				return fmt.Errorf("failed to marshal path %s: %w", path, err)
+			}
+		}
+		return nil
+	})); err != nil {
+		return fmt.Errorf("failed to marshal paths: %w", err)
+	}
+	return nil
+}
+
+var _ zapcore.ObjectMarshaler = &System[Validatable]{}
+
 func (f *System[T]) Paths() []Path {
 	paths := make([]Path, 0, len(f.files))
 	for path := range f.files {
 		paths = append(paths, path)
 	}
+	sort.SliceStable(paths, func(i, j int) bool {
+		return paths[i] < paths[j]
+	})
 	return paths
 }
 
@@ -89,7 +118,9 @@ func SystemMerge[T Validatable](systems ...*System[T]) (*System[T], error) {
 			if ret.IsTracked(path) {
 				return nil, &MergeDuplicatePathErr[T]{Path: path, Value1: ret.Get(path), Value2: state}
 			}
-			ret.files[path] = state
+			if err := ret.Add(path, state); err != nil {
+				return nil, fmt.Errorf("failed to add %s: %w", path, err)
+			}
 		}
 	}
 	return &ret, nil

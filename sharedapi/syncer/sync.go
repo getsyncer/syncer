@@ -67,22 +67,26 @@ func (s *syncerImpl) Apply(ctx context.Context) error {
 		return fmt.Errorf("failed to setup sync: %w", err)
 	}
 	changes := make([]*files.System[*files.StateWithChangeReason], 0, len(rc.Syncs))
-	if err := s.loopAndExecute(ctx, rc, wd, loopAndExecuteRun(changes)); err != nil {
+	if err := s.loopAndExecute(ctx, rc, wd, loopAndExecuteRun(&changes)); err != nil {
 		return fmt.Errorf("failed to run sync: %w", err)
 	}
+	s.log.Debug(ctx, "Merging changes", zap.Any("changes", changes))
 	finalExpectedState, err := files.SystemMerge(changes...)
 	if err != nil {
 		return fmt.Errorf("failed to merge changes: %w", err)
 	}
 	allPaths := finalExpectedState.Paths()
+	s.log.Debug(ctx, "Loading existing state", zap.Any("paths", allPaths))
 	existingState, err := files.LoadAllState(ctx, allPaths, s.stateLoader)
 	if err != nil {
 		return fmt.Errorf("failed to load existing state: %w", err)
 	}
+	s.log.Debug(ctx, "Calculating diff", zap.Any("existing", existingState), zap.Any("final", finalExpectedState))
 	stateDiff, err := files.CalculateDiff(ctx, existingState, finalExpectedState)
 	if err != nil {
 		return fmt.Errorf("failed to calculate diff: %w", err)
 	}
+	s.log.Debug(ctx, "Executing diff", zap.Any("diff", stateDiff))
 	if err := files.ExecuteAllDiffs(ctx, stateDiff, s.diffExecutor); err != nil {
 		return fmt.Errorf("failed to execute diff: %w", err)
 	}
@@ -91,14 +95,14 @@ func (s *syncerImpl) Apply(ctx context.Context) error {
 
 type loopAndRunLogic func(ctx context.Context, syncer DriftSyncer, runData *SyncRun) error
 
-func loopAndExecuteRun(changes []*files.System[*files.StateWithChangeReason]) func(ctx context.Context, syncer DriftSyncer, runData *SyncRun) error {
+func loopAndExecuteRun(changes *[]*files.System[*files.StateWithChangeReason]) func(ctx context.Context, syncer DriftSyncer, runData *SyncRun) error {
 	return func(ctx context.Context, syncer DriftSyncer, runData *SyncRun) error {
 		var runChanges *files.System[*files.StateWithChangeReason]
 		var err error
 		if runChanges, err = syncer.Run(ctx, runData); err != nil {
 			return fmt.Errorf("error running %v: %w", syncer.Name(), err)
 		}
-		changes = append(changes, runChanges)
+		*changes = append(*changes, runChanges)
 		return nil
 	}
 }
