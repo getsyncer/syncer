@@ -18,9 +18,10 @@ func newRootCommand() *rootCmd {
 	return &rootCmd{}
 }
 
-func RootCobraCommand(r *rootCmd, s *syncCmd, v *vendorCmd) *cobra.Command {
+func RootCobraCommand(r *rootCmd, s *syncCmd, v *vendorCmd, u *unvendorCmd) *cobra.Command {
 	ret := r.MakeCobraCommand()
 	ret.AddCommand(s.MakeCobraCommand())
 	ret.AddCommand(v.MakeCobraCommand())
+	ret.AddCommand(u.MakeCobraCommand())
 	return ret
 }

@@ -17,6 +17,7 @@ var Module = fx.Module("cli",
 		newRootCommand,
 		newSyncCommand,
 		newVendorCommand,
+		newUnvendorCmd,
 		RootCobraCommand,
 	),
 )

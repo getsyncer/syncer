@@ -68,11 +68,24 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 			return fmt.Errorf("failed to stat go.mod file: %w", err)
 		}
 		// 4. If there is no go.mod file, run `go mod init syncer`
-		if err := initGoModAndImport(ctx, r.logger, rc, goModFileLoc); err != nil {
-			return fmt.Errorf("failed to init go.mod file: %w", err)
+		if err := initGoModAndImport(ctx, r.logger, rc, ".syncer"); err != nil {
+			return fmt.Errorf("failed to setup go.mod file: %w", err)
 		}
 	}
 	return nil
+}
+
+func tempChangeToDir(dir string) (func() error, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		return nil, fmt.Errorf("failed to change to directory %q: %w", dir, err)
+	}
+	return func() error {
+		return os.Chdir(cwd)
+	}, nil
 }
 
 func newVendorCommand(logger *zapctx.Logger, git git.Git, loader syncer.ConfigLoader) *vendorCmd {

@@ -20,13 +20,13 @@ func (f *FxLogger) LogEvent(event fxevent.Event) {
 		if e.Err != nil {
 			f.logger.IfErr(e.Err).Error(ctx, "Failed to start")
 		} else {
-			f.logger.Info(ctx, "Started")
+			f.logger.Debug(ctx, "Started")
 		}
 	case *fxevent.Invoked:
 		if e.Err != nil {
 			f.logger.IfErr(e.Err).Error(ctx, "Failed to invoke")
 		} else {
-			f.logger.Info(ctx, "Invoked")
+			f.logger.Debug(ctx, "Invoked")
 		}
 	default:
 		var buf bytes.Buffer

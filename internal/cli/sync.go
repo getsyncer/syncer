@@ -42,36 +42,68 @@ func (r *syncCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 	if err != nil {
 		return fmt.Errorf("failed to find syncer file: %w", err)
 	}
-	// 2. Make a temp subdirectory
-	td, err := os.MkdirTemp("", "syncer")
-	if err != nil {
-		return fmt.Errorf("failed to make temp dir: %w", err)
-	}
-	ctx = zapctx.With(ctx, zap.String("temp_dir", td))
-	defer func() {
-		if retErr == nil {
-			if err := os.RemoveAll(td); err != nil {
-				fmt.Printf("failed to remove temp dir: %v\n", err)
+	wd, cleanup, err := setupSync(ctx, r.logger, rc)
+	if cleanup != nil {
+		defer func() {
+			if err := cleanup(); err != nil {
+				r.logger.Warn(ctx, "failed to cleanup", zap.Error(err))
 			}
-		}
-	}()
-	r.logger.Debug(ctx, "Running go mod init")
-	if err := initGoModAndImport(ctx, r.logger, rc, td); err != nil {
-		return fmt.Errorf("failed to setup syncer directory: %w", err)
+		}()
 	}
+	if err != nil {
+		return fmt.Errorf("failed to setup sync: %w", err)
+	}
+
 	// 4. Compile the syncer program (go build .)
 	r.logger.Debug(ctx, "Running go build")
+	syncerBinaryPath, err := tempPathForSyncer()
+	if err != nil {
+		return fmt.Errorf("failed to get temp path for syncer: %w", err)
+	}
+	r.logger.Debug(ctx, "Running syncer program", zap.String("path", syncerBinaryPath))
 	// Run go build with tag "syncer"
-	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", "syncer", "sync.go").WithDir(td).Run(ctx); err != nil {
+	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", syncerBinaryPath, "sync.go").WithDir(wd).Run(ctx); err != nil {
 		return fmt.Errorf("failed to build syncer: %w", err)
 	}
-	// 5. Run it ( ./sync) inside this git repo's working directory
-	syncerPath := filepath.Join(td, "syncer")
-	r.logger.Debug(ctx, "Running syncer program", zap.String("path", syncerPath))
-	if err := pipe.NewPiped(syncerPath).Run(ctx); err != nil {
+	if err := pipe.NewPiped(syncerBinaryPath).Run(ctx); err != nil {
 		return fmt.Errorf("failed to run syncer: %w", err)
 	}
 	return err
+}
+
+func tempPathForSyncer() (string, error) {
+	f, err := os.CreateTemp("", "syncer")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file: %w", err)
+	}
+	fileName := f.Name()
+	if err := f.Close(); err != nil {
+		return "", fmt.Errorf("failed to close temp file: %w", err)
+	}
+	return fileName, nil
+}
+
+func setupSync(ctx context.Context, logger *zapctx.Logger, rc *syncer.RootConfig) (string, func() error, error) {
+	// If there is a vendored sync file, do nothing
+	vendoredFileLoc := filepath.Join(".syncer", "sync.go")
+	if _, err := os.Stat(vendoredFileLoc); err == nil {
+		return ".syncer", func() error { return nil }, nil
+	}
+
+	// 2. Make a temp subdirectory
+	td, err := os.MkdirTemp("", "syncer")
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to make temp dir: %w", err)
+	}
+	ctx = zapctx.With(ctx, zap.String("temp_dir", td))
+	cleanup := func() error {
+		return os.RemoveAll(td)
+	}
+	logger.Debug(ctx, "Running go mod init")
+	if err := initGoModAndImport(ctx, logger, rc, td); err != nil {
+		return "", cleanup, fmt.Errorf("failed to setup syncer directory: %w", err)
+	}
+	return td, cleanup, nil
 }
 
 func initGoModAndImport(ctx context.Context, logger *zapctx.Logger, rc *syncer.RootConfig, td string) error {
@@ -174,7 +206,7 @@ package main
 import (
 {{ range $val := .Logic }}
      _ "{{$val.SourceWithoutVersion}}"
-{{ end }}
+{{- end }}
 	"github.com/cresta/syncer/sharedapi/syncer"
 )
 
