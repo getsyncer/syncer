@@ -112,7 +112,7 @@ func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files
 	if err != nil {
 		return nil, fmt.Errorf("unable to decode config: %w", err)
 	}
-	cfg, err = f.mutators.Mutate(cfg)
+	cfg, err = f.mutators.Mutate(ctx, runData, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to mutate config: %w", err)
 	}
