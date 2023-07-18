@@ -26,7 +26,7 @@ func NewGenerator[T TemplateConfig](files map[string]string, name string, priori
 	}
 	generatedTemplates := make(map[string]*template.Template, len(files))
 	for k, v := range files {
-		tmpl, err := template.New(k).Funcs(sprig.TxtFuncMap()).Parse(v)
+		tmpl, err := NewTemplate(k, v)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse template %q: %w", k, err)
 		}
@@ -40,6 +40,10 @@ func NewGenerator[T TemplateConfig](files map[string]string, name string, priori
 		logger:     logger,
 		setupLogic: setupLogic,
 	}, nil
+}
+
+func NewTemplate(name string, data string) (*template.Template, error) {
+	return template.New(name).Funcs(sprig.TxtFuncMap()).Parse(data)
 }
 
 type Decoder[T TemplateConfig] func(syncer.RunConfig) (T, error)
@@ -151,7 +155,7 @@ func ExecuteTemplateOnConfig[T TemplateConfig](_ context.Context, runData *synce
 		Config:  config,
 	}
 	var into bytes.Buffer
-	if err := tmpl.Funcs(sprig.FuncMap()).Execute(&into, d); err != nil {
+	if err := tmpl.Execute(&into, d); err != nil {
 		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
 	return into.String(), nil
