@@ -67,8 +67,6 @@ func NewModule[T TemplateConfig](config NewModuleConfig[T]) fx.Option {
 	)
 }
 
-type ConfigMutator[T TemplateConfig] func(T) T
-
 func DefaultDecoder[T TemplateConfig]() func(runConfig syncer.RunConfig) (T, error) {
 	return func(runConfig syncer.RunConfig) (T, error) {
 		var cfg T
@@ -92,7 +90,7 @@ type Generator[T TemplateConfig] struct {
 	name       string
 	priority   syncer.Priority
 	decoder    func(syncer.RunConfig) (T, error)
-	mutators   []ConfigMutator[T]
+	mutators   syncer.MutatorList[T]
 	setupLogic syncer.SetupSyncer
 	logger     *zapctx.Logger
 }
@@ -104,8 +102,8 @@ func (f *Generator[T]) Setup(ctx context.Context, runData *syncer.SyncRun) error
 	return nil
 }
 
-func (f *Generator[T]) AddMutator(mutator ConfigMutator[T]) {
-	f.mutators = append(f.mutators, mutator)
+func (f *Generator[T]) AddMutator(mutator syncer.ConfigMutator[T]) {
+	f.mutators.AddMutator(mutator)
 }
 
 func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files.System[*files.StateWithChangeReason], error) {
@@ -114,15 +112,16 @@ func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files
 	if err != nil {
 		return nil, fmt.Errorf("unable to decode config: %w", err)
 	}
-	for _, v := range f.mutators {
-		cfg = v(cfg)
+	cfg, err = f.mutators.Mutate(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to mutate config: %w", err)
 	}
 	var ret files.System[*files.StateWithChangeReason]
 	for k, v := range f.files {
 		f.logger.Debug(ctx, "generating template", zap.String("destination", k))
 		var err error
 		var fileContent string
-		if fileContent, err = f.generate(ctx, runData, cfg, v, k); err != nil {
+		if fileContent, err = f.generate(ctx, runData, cfg, v); err != nil {
 			return nil, fmt.Errorf("unable to generate template for %s: %w", k, err)
 		}
 		if err := ret.Add(files.Path(k), &files.StateWithChangeReason{
@@ -141,8 +140,12 @@ func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files
 	return &ret, nil
 }
 
-func (f *Generator[T]) generate(ctx context.Context, runData *syncer.SyncRun, config T, tmpl *template.Template, destination string) (string, error) {
-	f.logger.Debug(ctx, "generating template", zap.String("destination", destination), zap.Any("config", config))
+func (f *Generator[T]) generate(ctx context.Context, runData *syncer.SyncRun, config T, tmpl *template.Template) (string, error) {
+	f.logger.Debug(ctx, "generating template", zap.Any("config", config))
+	return ExecuteTemplateOnConfig(ctx, runData, config, tmpl)
+}
+
+func ExecuteTemplateOnConfig[T TemplateConfig](_ context.Context, runData *syncer.SyncRun, config T, tmpl *template.Template) (string, error) {
 	d := TemplateData[T]{
 		RunData: runData,
 		Config:  config,

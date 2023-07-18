@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 )
@@ -31,6 +32,19 @@ func (r *registry) Get(name string) (DriftSyncer, bool) {
 		}
 	}
 	return nil, false
+}
+
+func AddMutator[T DriftConfig](r Registry, name string, mutator ConfigMutator[T]) error {
+	s, ok := r.Get(name)
+	if !ok {
+		return fmt.Errorf("syncer %s not found", name)
+	}
+	asMutatable, ok := s.(Mutatable[T])
+	if !ok {
+		return fmt.Errorf("syncer %s is not mutatable", name)
+	}
+	asMutatable.AddMutator(mutator)
+	return nil
 }
 
 var _ Registry = &registry{}

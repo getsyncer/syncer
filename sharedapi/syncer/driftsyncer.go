@@ -22,6 +22,8 @@ type DriftSyncer interface {
 	Priority() Priority
 }
 
+type DriftConfig interface{}
+
 type SetupSyncer interface {
 	Setup(ctx context.Context, runData *SyncRun) error
 }
