@@ -171,3 +171,21 @@ func (f *Generator[T]) Priority() syncer.Priority {
 
 var _ syncer.DriftSyncer = &Generator[TemplateConfig]{}
 var _ syncer.SetupSyncer = &Generator[TemplateConfig]{}
+
+type GenericConfigMutator[T TemplateConfig] struct {
+	Name        string
+	TemplateStr string
+	MutateFunc  func(ctx context.Context, renderedTemplate string, cfg T) (T, error)
+}
+
+func (g *GenericConfigMutator[T]) Mutate(ctx context.Context, runData *syncer.SyncRun, cfg T) (T, error) {
+	updatedBuildGoLib, err := NewTemplate(g.Name, g.TemplateStr)
+	if err != nil {
+		return cfg, fmt.Errorf("unable to parse template: %w", err)
+	}
+	res, err := ExecuteTemplateOnConfig(ctx, runData, cfg, updatedBuildGoLib)
+	if err != nil {
+		return cfg, fmt.Errorf("unable to execute template: %w", err)
+	}
+	return g.MutateFunc(ctx, res, cfg)
+}

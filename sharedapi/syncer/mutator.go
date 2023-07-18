@@ -50,3 +50,15 @@ func AddMutator[T DriftConfig](r Registry, name string, mutator ConfigMutator[T]
 	asMutatable.AddMutator(mutator)
 	return nil
 }
+
+type SetupMutator[T DriftConfig] struct {
+	Mutator ConfigMutator[T]
+	Name    string
+}
+
+func (s *SetupMutator[T]) Setup(_ context.Context, runData *SyncRun) error {
+	if err := AddMutator[T](runData.Registry, s.Name, s.Mutator); err != nil {
+		return fmt.Errorf("unable to add mutator: %w", err)
+	}
+	return nil
+}

@@ -33,3 +33,14 @@ type SetupSyncerFunc func(ctx context.Context, runData *SyncRun) error
 func (s SetupSyncerFunc) Setup(ctx context.Context, runData *SyncRun) error {
 	return s(ctx, runData)
 }
+
+type MultiSetupSyncer []SetupSyncer
+
+func (m MultiSetupSyncer) Setup(ctx context.Context, runData *SyncRun) error {
+	for _, s := range m {
+		if err := s.Setup(ctx, runData); err != nil {
+			return err
+		}
+	}
+	return nil
+}

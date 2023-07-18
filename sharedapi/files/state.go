@@ -114,7 +114,7 @@ func NewStateFromPath(path Path) (*State, error) {
 	}
 	currentContent, err := os.ReadFile(pathStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", pathStr, err)
+		return nil, fmt.Errorf("failed to read file for new state %s: %w", pathStr, err)
 	}
 	ret.Contents = currentContent
 	return &ret, nil
