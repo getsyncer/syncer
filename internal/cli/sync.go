@@ -145,7 +145,11 @@ func loadSyncerFile(ctx context.Context, g git.Git, loader syncer.ConfigLoader) 
 	if configFile == "" {
 		return nil, fmt.Errorf("no config file found")
 	}
-	ret, err := loader.LoadConfig(ctx, configFile)
+	b, err := os.ReadFile(configFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+	ret, err := loader.LoadConfig(ctx, bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config file: %w", err)
 	}
@@ -205,6 +209,9 @@ package main
 
 import (
 {{ range $val := .Logic }}
+     _ "{{$val.SourceWithoutVersion}}"
+{{- end }}
+{{ range $val := .Children }}
      _ "{{$val.SourceWithoutVersion}}"
 {{- end }}
 	"github.com/cresta/syncer/sharedapi/syncer"

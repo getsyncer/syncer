@@ -9,6 +9,11 @@ import (
 	"go.uber.org/fx"
 )
 
+const (
+	FxTagSyncers  = `group:"syncers"`
+	FxTagChildren = `group:"childrensource"`
+)
+
 var Module = fx.Module("syncer",
 	fx.Provide(
 		fx.Annotate(
@@ -18,7 +23,12 @@ var Module = fx.Module("syncer",
 		fx.Annotate(
 			NewRegistry,
 			fx.As(new(Registry)),
-			fx.ParamTags(`group:"syncers"`),
+			fx.ParamTags(FxTagSyncers),
+		),
+		fx.Annotate(
+			NewChildrenRegistry,
+			fx.As(new(ChildrenRegistry)),
+			fx.ParamTags(FxTagChildren),
 		),
 		fx.Annotate(
 			NewSyncer,

@@ -6,7 +6,6 @@ import (
 )
 
 type Registry interface {
-	Register(r DriftSyncer) error
 	Registered() []DriftSyncer
 	Get(name string) (DriftSyncer, bool)
 }
@@ -16,10 +15,17 @@ type registry struct {
 	mu      sync.Mutex
 }
 
-func NewRegistry(syncers []DriftSyncer) Registry {
+func NewRegistry(syncers []DriftSyncer) (Registry, error) {
+	seen := map[string]struct{}{}
+	for _, s := range syncers {
+		if _, ok := seen[s.Name()]; ok {
+			return nil, &ErrSyncerAlreadyRegistered{Name: s.Name()}
+		}
+		seen[s.Name()] = struct{}{}
+	}
 	return &registry{
 		syncers: syncers,
-	}
+	}, nil
 }
 
 func (r *registry) Get(name string) (DriftSyncer, bool) {
@@ -41,20 +47,6 @@ type ErrSyncerAlreadyRegistered struct {
 
 func (e *ErrSyncerAlreadyRegistered) Error() string {
 	return "syncer already registered: " + e.Name
-}
-
-func (r *registry) Register(s DriftSyncer) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	for _, r := range r.syncers {
-		if r.Name() == s.Name() {
-			return &ErrSyncerAlreadyRegistered{
-				Name: s.Name(),
-			}
-		}
-	}
-	r.syncers = append(r.syncers, s)
-	return nil
 }
 
 func (r *registry) Registered() []DriftSyncer {

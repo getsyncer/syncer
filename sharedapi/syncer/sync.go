@@ -54,11 +54,19 @@ var _ Syncer = &syncerImpl{}
 
 func (s *syncerImpl) Apply(ctx context.Context) error {
 	s.log.Info(ctx, "Starting sync")
-	rc, err := s.configLoader.LoadConfig(ctx, "")
+	rc, err := ConfigFromFile(ctx, s.configLoader)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
+	s.log.Debug(ctx, "config pre flatten", zap.Any("config", rc))
+	if err := s.configLoader.FlattenChildren(ctx, rc); err != nil {
+		return fmt.Errorf("failed to flatten children: %w", err)
+	}
 	s.log.Debug(ctx, "Loaded config", zap.Any("config", rc))
+	printConfigIfDebug(ctx, s.log, rc)
+	if err := s.mergeConfigs(ctx, rc); err != nil {
+		return fmt.Errorf("failed to merge configs: %w", err)
+	}
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
@@ -93,6 +101,16 @@ func (s *syncerImpl) Apply(ctx context.Context) error {
 	return nil
 }
 
+func printConfigIfDebug(ctx context.Context, logger *zapctx.Logger, rc *RootConfig) {
+	if logger.Unwrap(ctx).Level() <= zap.DebugLevel {
+		asY, err := rc.AsYaml()
+		if err != nil {
+			fmt.Printf("Failed to print config as yaml: %v\n", err)
+		}
+		fmt.Println(asY)
+	}
+}
+
 type loopAndRunLogic func(ctx context.Context, syncer DriftSyncer, runData *SyncRun) error
 
 func loopAndExecuteRun(changes *[]*files.System[*files.StateWithChangeReason]) func(ctx context.Context, syncer DriftSyncer, runData *SyncRun) error {
@@ -116,9 +134,19 @@ func loopAndExecuteSetup(ctx context.Context, syncer DriftSyncer, runData *SyncR
 	return nil
 }
 
+func (s *syncerImpl) mergeConfigs(ctx context.Context, rc *RootConfig) error {
+	for _, r := range rc.Syncs {
+		s.log.Debug(ctx, "Config before merge", zap.Any("config", r.Config), zap.String("config-as-yaml", ValOrErr(r.Config.AsYaml())))
+		if err := r.Config.Merge(rc.Config); err != nil {
+			return fmt.Errorf("failed to merge run config: %w", err)
+		}
+		s.log.Debug(ctx, "Config after merge", zap.Any("config", r.Config), zap.String("config-as-yaml", ValOrErr(r.Config.AsYaml())))
+	}
+	return nil
+}
+
 func (s *syncerImpl) loopAndExecute(ctx context.Context, rc *RootConfig, wd string, toRun loopAndRunLogic) error {
 	for _, r := range rc.Syncs {
-		s.log.Debug(ctx, "Running sync", zap.String("logic", r.Logic), zap.Any("run-cfg", r.Config))
 		logic, exists := s.Registry().Get(r.Logic)
 		if !exists {
 			return fmt.Errorf("logic %s not found", r.Logic)
@@ -126,7 +154,7 @@ func (s *syncerImpl) loopAndExecute(ctx context.Context, rc *RootConfig, wd stri
 		sr := SyncRun{
 			Registry:              s.Registry(),
 			RootConfig:            rc,
-			RunConfig:             RunConfig{Node: r.Config},
+			RunConfig:             r.Config,
 			DestinationWorkingDir: wd,
 		}
 		if err := toRun(ctx, logic, &sr); err != nil {
@@ -134,6 +162,13 @@ func (s *syncerImpl) loopAndExecute(ctx context.Context, rc *RootConfig, wd stri
 		}
 	}
 	return nil
+}
+
+func ValOrErr(v1 string, err error) string {
+	if err != nil {
+		return err.Error()
+	}
+	return v1
 }
 
 func DefaultFxOptions() fx.Option {
