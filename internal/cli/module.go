@@ -15,9 +15,11 @@ import (
 var Module = fx.Module("cli",
 	fx.Provide(
 		newRootCommand,
-		newSyncCommand,
+		newApplyCommand,
 		newVendorCommand,
 		newUnvendorCmd,
+		newPlanCommand,
+		newExecuteBase,
 		RootCobraCommand,
 	),
 )

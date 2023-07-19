@@ -3,7 +3,12 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
+
+	"github.com/cresta/syncer/sharedapi/files"
+
+	"github.com/cresta/syncer/sharedapi/files/fileprinter"
 
 	"github.com/cresta/syncer/internal/fxcli"
 	"go.uber.org/fx"
@@ -31,8 +36,12 @@ var Module = fx.Module("syncer",
 			fx.ParamTags(FxTagChildren),
 		),
 		fx.Annotate(
-			NewSyncer,
-			fx.As(new(Syncer)),
+			NewPlanner,
+			fx.As(new(Planner)),
+		),
+		fx.Annotate(
+			NewApplier,
+			fx.As(new(Applier)),
 		),
 	),
 )
@@ -72,16 +81,49 @@ var ExecuteCliModule = fx.Module(
 )
 
 type FxCli struct {
-	syncer Syncer
+	planner Planner
+	applier Applier
+	printer fileprinter.Printer
 }
 
-func NewFxCli(syncer Syncer) *FxCli {
-	return &FxCli{syncer: syncer}
+func NewFxCli(planner Planner, applier Applier, printer fileprinter.Printer) *FxCli {
+	return &FxCli{planner: planner, applier: applier, printer: printer}
 }
 
 func (f *FxCli) Run() {
 	ctx := context.Background()
-	if err := f.syncer.Apply(ctx); err != nil {
-		fmt.Println("Error: ", err)
+	cmd := os.Getenv("SYNCER_EXEC_CMD")
+	if cmd == "" {
+		cmd = "plan"
+	}
+	switch cmd {
+	case "plan":
+		fallthrough
+	case "apply":
+		diffs, err := f.planner.Plan(ctx)
+		if err != nil {
+			fmt.Println("Error: ", err)
+			return
+		}
+		if err := f.printer.PrettyPrintDiffs(os.Stdout, diffs); err != nil {
+			fmt.Println("Error: ", err)
+			return
+		}
+		if cmd == "plan" {
+			if os.Getenv("SYNCER_EXIT_CODE_ON_DIFF") == "true" {
+				if files.IncludesChanges(diffs) {
+					os.Exit(1)
+				}
+			}
+		}
+		if cmd == "apply" {
+			if err := f.applier.Apply(ctx, diffs); err != nil {
+				fmt.Println("Error: ", err)
+				return
+			}
+		}
+		return
+	default:
+		fmt.Println("Unknown command: ", cmd)
 	}
 }

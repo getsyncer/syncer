@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cresta/syncer/sharedapi/files/fileprinter/consoleprinter"
+
 	"github.com/cresta/syncer/sharedapi/files/osfiles"
 
 	"github.com/cresta/syncer/sharedapi/files"
@@ -18,82 +20,90 @@ import (
 	"github.com/cresta/zapctx"
 )
 
-type Syncer interface {
-	Apply(ctx context.Context) error
-	Registry() Registry
-	ConfigLoader() ConfigLoader
+type Planner interface {
+	Plan(ctx context.Context) (*files.System[*files.DiffWithChangeReason], error)
 }
 
-func NewSyncer(registry Registry, configLoader ConfigLoader, log *zapctx.Logger, stateLoader files.StateLoader, diffExecutor files.DiffExecutor) Syncer {
-	return &syncerImpl{
+type Applier interface {
+	Apply(ctx context.Context, stateDiff *files.System[*files.DiffWithChangeReason]) error
+}
+
+func NewPlanner(registry Registry, configLoader ConfigLoader, log *zapctx.Logger, stateLoader files.StateLoader) Planner {
+	return &plannerImpl{
 		registry:     registry,
 		configLoader: configLoader,
 		log:          log,
 		stateLoader:  stateLoader,
-		diffExecutor: diffExecutor,
 	}
 }
 
-type syncerImpl struct {
+type plannerImpl struct {
 	registry     Registry
 	configLoader ConfigLoader
 	log          *zapctx.Logger
 	stateLoader  files.StateLoader
-	diffExecutor files.DiffExecutor
 }
 
-func (s *syncerImpl) ConfigLoader() ConfigLoader {
-	return s.configLoader
-}
+var _ Planner = &plannerImpl{}
 
-func (s *syncerImpl) Registry() Registry {
-	return s.registry
-}
-
-var _ Syncer = &syncerImpl{}
-
-func (s *syncerImpl) Apply(ctx context.Context) error {
-	s.log.Info(ctx, "Starting sync")
+func (s *plannerImpl) Plan(ctx context.Context) (*files.System[*files.DiffWithChangeReason], error) {
+	s.log.Debug(ctx, "Starting plan")
 	rc, err := ConfigFromFile(ctx, s.configLoader)
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	s.log.Debug(ctx, "config pre flatten", zap.Any("config", rc))
 	if err := s.configLoader.FlattenChildren(ctx, rc); err != nil {
-		return fmt.Errorf("failed to flatten children: %w", err)
+		return nil, fmt.Errorf("failed to flatten children: %w", err)
 	}
 	s.log.Debug(ctx, "Loaded config", zap.Any("config", rc))
 	printConfigIfDebug(ctx, s.log, rc)
 	if err := s.mergeConfigs(ctx, rc); err != nil {
-		return fmt.Errorf("failed to merge configs: %w", err)
+		return nil, fmt.Errorf("failed to merge configs: %w", err)
 	}
 	wd, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("failed to get working directory: %w", err)
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
 	}
 	if err := s.loopAndExecute(ctx, rc, wd, loopAndExecuteSetup); err != nil {
-		return fmt.Errorf("failed to setup sync: %w", err)
+		return nil, fmt.Errorf("failed to setup sync: %w", err)
 	}
 	changes := make([]*files.System[*files.StateWithChangeReason], 0, len(rc.Syncs))
 	if err := s.loopAndExecute(ctx, rc, wd, loopAndExecuteRun(&changes)); err != nil {
-		return fmt.Errorf("failed to run sync: %w", err)
+		return nil, fmt.Errorf("failed to run sync: %w", err)
 	}
 	s.log.Debug(ctx, "Merging changes", zap.Any("changes", changes))
 	finalExpectedState, err := files.SystemMerge(changes...)
 	if err != nil {
-		return fmt.Errorf("failed to merge changes: %w", err)
+		return nil, fmt.Errorf("failed to merge changes: %w", err)
 	}
 	allPaths := finalExpectedState.Paths()
 	s.log.Debug(ctx, "Loading existing state", zap.Any("paths", allPaths))
 	existingState, err := files.LoadAllState(ctx, allPaths, s.stateLoader)
 	if err != nil {
-		return fmt.Errorf("failed to load existing state: %w", err)
+		return nil, fmt.Errorf("failed to load existing state: %w", err)
 	}
 	s.log.Debug(ctx, "Calculating diff", zap.Any("existing", existingState), zap.Any("final", finalExpectedState))
 	stateDiff, err := files.CalculateDiff(ctx, existingState, finalExpectedState)
 	if err != nil {
-		return fmt.Errorf("failed to calculate diff: %w", err)
+		return nil, fmt.Errorf("failed to calculate diff: %w", err)
 	}
+	return stateDiff, nil
+}
+
+func NewApplier(log *zapctx.Logger, diffExecutor files.DiffExecutor) Applier {
+	return &applyImpl{
+		log:          log,
+		diffExecutor: diffExecutor,
+	}
+}
+
+type applyImpl struct {
+	log          *zapctx.Logger
+	diffExecutor files.DiffExecutor
+}
+
+func (s *applyImpl) Apply(ctx context.Context, stateDiff *files.System[*files.DiffWithChangeReason]) error {
 	s.log.Debug(ctx, "Executing diff", zap.Any("diff", stateDiff))
 	if err := files.ExecuteAllDiffs(ctx, stateDiff, s.diffExecutor); err != nil {
 		return fmt.Errorf("failed to execute diff: %w", err)
@@ -134,7 +144,7 @@ func loopAndExecuteSetup(ctx context.Context, syncer DriftSyncer, runData *SyncR
 	return nil
 }
 
-func (s *syncerImpl) mergeConfigs(ctx context.Context, rc *RootConfig) error {
+func (s *plannerImpl) mergeConfigs(ctx context.Context, rc *RootConfig) error {
 	for _, r := range rc.Syncs {
 		s.log.Debug(ctx, "Config before merge", zap.Any("config", r.Config), zap.String("config-as-yaml", ValOrErr(r.Config.AsYaml())))
 		if err := r.Config.Merge(rc.Config); err != nil {
@@ -145,14 +155,14 @@ func (s *syncerImpl) mergeConfigs(ctx context.Context, rc *RootConfig) error {
 	return nil
 }
 
-func (s *syncerImpl) loopAndExecute(ctx context.Context, rc *RootConfig, wd string, toRun loopAndRunLogic) error {
+func (s *plannerImpl) loopAndExecute(ctx context.Context, rc *RootConfig, wd string, toRun loopAndRunLogic) error {
 	for _, r := range rc.Syncs {
-		logic, exists := s.Registry().Get(r.Logic)
+		logic, exists := s.registry.Get(r.Logic)
 		if !exists {
 			return fmt.Errorf("logic %s not found", r.Logic)
 		}
 		sr := SyncRun{
-			Registry:              s.Registry(),
+			Registry:              s.registry,
 			RootConfig:            rc,
 			RunConfig:             r.Config,
 			DestinationWorkingDir: wd,
@@ -178,9 +188,9 @@ func DefaultFxOptions() fx.Option {
 	)
 }
 
-func Apply(opts ...fx.Option) {
+func FromCli(opts ...fx.Option) {
 	var allOpts []fx.Option
-	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger), osfiles.Module)
+	allOpts = append(allOpts, fx.WithLogger(log.NewFxLogger), osfiles.Module, consoleprinter.Module)
 	allOpts = append(allOpts, opts...)
 	allOpts = append(allOpts, globalFxRegistryInstance.Get()...)
 	allOpts = append(allOpts, ExecuteCliModule)

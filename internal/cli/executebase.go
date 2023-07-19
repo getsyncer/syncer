@@ -6,35 +6,31 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
-
-	"go.uber.org/zap"
-
-	"github.com/cresta/zapctx"
 
 	"github.com/cresta/pipe"
 	"github.com/cresta/syncer/internal/git"
 	"github.com/cresta/syncer/sharedapi/syncer"
-	"github.com/spf13/cobra"
+	"github.com/cresta/zapctx"
+	"go.uber.org/zap"
 )
 
-type syncCmd struct {
+type executeBase struct {
 	git    git.Git
 	loader syncer.ConfigLoader
 	logger *zapctx.Logger
 }
 
-func (r *syncCmd) MakeCobraCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "sync",
-		Short: "Execute a sync, modifying any files that need to be modified",
-		RunE:  r.RunE,
-		Args:  cobra.NoArgs,
+func newExecuteBase(git git.Git, loader syncer.ConfigLoader, logger *zapctx.Logger) *executeBase {
+	return &executeBase{
+		git:    git,
+		loader: loader,
+		logger: logger,
 	}
 }
 
-func (r *syncCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
-	ctx := cmd.Context()
+func (r *executeBase) Execute(ctx context.Context, execCmd string, extraEnv string) (retErr error) {
 	// General steps:
 	// 1. Find the syncer file
 	r.logger.Debug(ctx, "Starting sync")
@@ -65,10 +61,48 @@ func (r *syncCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", syncerBinaryPath, "sync.go").WithDir(wd).Run(ctx); err != nil {
 		return fmt.Errorf("failed to build syncer: %w", err)
 	}
-	if err := pipe.NewPiped(syncerBinaryPath).Run(ctx); err != nil {
-		return fmt.Errorf("failed to run syncer: %w", err)
+	execEnv := envWithExtraParam(os.Environ(), "SYNCER_EXEC_CMD", execCmd)
+	if extraEnv != "" {
+		execEnv = append(execEnv, extraEnv)
 	}
-	return err
+	if err := pipe.NewPiped(syncerBinaryPath).WithEnv(execEnv).Run(ctx); err != nil {
+		return &failedToRunErr{
+			root: err,
+		}
+	}
+	return nil
+}
+
+type failedToRunErr struct {
+	root error
+}
+
+func (f *failedToRunErr) Unwrap() error {
+	return f.root
+}
+
+func (f *failedToRunErr) Error() string {
+	return fmt.Sprintf("failed to run syncer: %v", f.root)
+}
+
+func envWithExtraParam(currentEnv []string, key string, value string) []string {
+	var ret []string
+	newVal := fmt.Sprintf("%s=%s", key, value)
+	for idx, e := range currentEnv {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		if parts[0] == key {
+			ret = append(ret, currentEnv[:idx]...)
+			ret = append(ret, newVal)
+			ret = append(ret, currentEnv[idx+1:]...)
+			return ret
+		}
+	}
+	ret = append(ret, currentEnv...)
+	ret = append(ret, newVal)
+	return ret
 }
 
 func tempPathForSyncer() (string, error) {
@@ -173,14 +207,6 @@ func changeToGitRoot(ctx context.Context, g git.Git) (func() error, error) {
 	}, nil
 }
 
-func newSyncCommand(logger *zapctx.Logger, git git.Git, loader syncer.ConfigLoader) *syncCmd {
-	return &syncCmd{
-		git:    git,
-		loader: loader,
-		logger: logger,
-	}
-}
-
 func generateSyncFile(ctx context.Context, logger *zapctx.Logger, rc *syncer.RootConfig, syncFilePath string) error {
 	logger.Debug(ctx, "Creating syncer program")
 	// 3. Create a syncer program there (sync.go)
@@ -218,6 +244,6 @@ import (
 )
 
 func main() {
-	syncer.Apply(syncer.DefaultFxOptions())
+	syncer.FromCli(syncer.DefaultFxOptions())
 }
 `

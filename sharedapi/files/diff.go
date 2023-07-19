@@ -68,6 +68,23 @@ const (
 	DiffActionNoChange            // No change to the object
 )
 
+func (d DiffAction) String() string {
+	switch d {
+	case DiffActionUnset:
+		return "unset"
+	case DiffActionDelete:
+		return "delete"
+	case DiffActionCreate:
+		return "create"
+	case DiffActionUpdate:
+		return "update"
+	case DiffActionNoChange:
+		return "no change"
+	default:
+		panic("unreachable")
+	}
+}
+
 func CalculateDiff(ctx context.Context, existing *System[*State], desired *System[*StateWithChangeReason]) (*System[*DiffWithChangeReason], error) {
 	var ret System[*DiffWithChangeReason]
 	existingPaths := existing.Paths()
@@ -98,6 +115,16 @@ func CalculateDiff(ctx context.Context, existing *System[*State], desired *Syste
 		}
 	}
 	return &ret, nil
+}
+
+func IncludesChanges(diffs *System[*DiffWithChangeReason]) bool {
+	for _, path := range diffs.Paths() {
+		f := diffs.Get(path)
+		if f.Diff.DiffResult.DiffAction != DiffActionNoChange {
+			return true
+		}
+	}
+	return false
 }
 
 func ExecuteDiffOnOs(path Path, d *Diff) error {
