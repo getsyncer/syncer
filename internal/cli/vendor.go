@@ -75,19 +75,6 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 	return nil
 }
 
-func tempChangeToDir(dir string) (func() error, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current working directory: %w", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		return nil, fmt.Errorf("failed to change to directory %q: %w", dir, err)
-	}
-	return func() error {
-		return os.Chdir(cwd)
-	}, nil
-}
-
 func newVendorCommand(logger *zapctx.Logger, git git.Git, loader syncer.ConfigLoader) *vendorCmd {
 	return &vendorCmd{
 		git:    git,

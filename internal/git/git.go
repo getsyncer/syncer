@@ -17,7 +17,7 @@ func NewGitOs() Git {
 	return &gitOs{}
 }
 
-func (g *gitOs) FindGitRoot(ctx context.Context, loc string) (string, error) {
+func (g *gitOs) FindGitRoot(_ context.Context, loc string) (string, error) {
 	for i := 0; i < 500; i++ {
 		gitDir := filepath.Join(loc, ".git")
 		if fs, err := os.Stat(gitDir); err == nil && fs.IsDir() {

@@ -23,12 +23,10 @@ func (y *consolePrinterImpl) PrettyPrintDiffs(into io.Writer, toPrint *files.Sys
 			if _, err := fmt.Fprintf(into, "  Delete\n"); err != nil {
 				return fmt.Errorf("failed to write delete: %w", err)
 			}
-			break
 		case files.DiffActionNoChange:
 			if _, err := fmt.Fprintf(into, "  No Change\n"); err != nil {
 				return fmt.Errorf("failed to write no change: %w", err)
 			}
-			break
 		case files.DiffActionCreate:
 			fallthrough
 		case files.DiffActionUpdate:

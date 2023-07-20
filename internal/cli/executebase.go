@@ -214,7 +214,7 @@ func generateSyncFile(ctx context.Context, logger *zapctx.Logger, rc *syncer.Roo
 	if err := syncerTemplate.Execute(&syncerProg, rc); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
-	if err := os.WriteFile(syncFilePath, syncerProg.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(syncFilePath, syncerProg.Bytes(), 0600); err != nil {
 		return fmt.Errorf("failed to write syncer file: %w", err)
 	}
 	if logger.Unwrap(ctx).Level() <= zap.DebugLevel {

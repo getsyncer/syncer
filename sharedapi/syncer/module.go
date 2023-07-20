@@ -91,13 +91,17 @@ func NewFxCli(planner Planner, applier Applier, printer fileprinter.Printer) *Fx
 func (f *FxCli) Run() {
 	ctx := context.Background()
 	cmd := os.Getenv("SYNCER_EXEC_CMD")
+	const (
+		plan  = "plan"
+		apply = "apply"
+	)
 	if cmd == "" {
-		cmd = "plan"
+		cmd = plan
 	}
 	switch cmd {
-	case "plan":
+	case plan:
 		fallthrough
-	case "apply":
+	case apply:
 		diffs, err := f.planner.Plan(ctx)
 		if err != nil {
 			fmt.Println("Error: ", err)
@@ -107,14 +111,14 @@ func (f *FxCli) Run() {
 			fmt.Println("Error: ", err)
 			return
 		}
-		if cmd == "plan" {
+		if cmd == plan {
 			if os.Getenv("SYNCER_EXIT_CODE_ON_DIFF") == "true" {
 				if files.IncludesChanges(diffs) {
 					os.Exit(1)
 				}
 			}
 		}
-		if cmd == "apply" {
+		if cmd == apply {
 			if err := f.applier.Apply(ctx, diffs); err != nil {
 				fmt.Println("Error: ", err)
 				return

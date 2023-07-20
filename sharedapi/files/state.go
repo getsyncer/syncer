@@ -100,18 +100,18 @@ func (e Existence) String() string {
 func NewStateFromPath(path Path) (*State, error) {
 	pathStr := path.String()
 	var ret State
-	if fs, err := os.Stat(pathStr); err != nil {
+	var fs os.FileInfo
+	var err error
+	if fs, err = os.Stat(pathStr); err != nil {
 		if os.IsNotExist(err) {
 			return &State{
 				FileExistence: FileExistenceAbsent,
 			}, nil
-		} else {
-			return nil, fmt.Errorf("failed to stat file %s: %w", path, err)
 		}
-	} else {
-		ret.FileExistence = FileExistencePresent
-		ret.Mode = fs.Mode()
+		return nil, fmt.Errorf("failed to stat file %s: %w", path, err)
 	}
+	ret.FileExistence = FileExistencePresent
+	ret.Mode = fs.Mode()
 	currentContent, err := os.ReadFile(pathStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file for new state %s: %w", pathStr, err)

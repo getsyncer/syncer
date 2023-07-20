@@ -34,7 +34,7 @@ func (c *ConfigLogic) SourceVersion() string {
 
 type ConfigSyncs struct {
 	Logic  string    `yaml:"logic"`
-	Id     string    `yaml:"id"`
+	ID     string    `yaml:"id"`
 	Config RunConfig `yaml:"config"`
 }
 
