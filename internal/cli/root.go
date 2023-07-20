@@ -18,11 +18,12 @@ func newRootCommand() *rootCmd {
 	return &rootCmd{}
 }
 
-func RootCobraCommand(r *rootCmd, s *planCmd, a *applyCmd, v *vendorCmd, u *unvendorCmd) *cobra.Command {
+func RootCobraCommand(r *rootCmd, s *planCmd, a *applyCmd, v *vendorCmd, u *unvendorCmd, ver *versionCmd) *cobra.Command {
 	ret := r.MakeCobraCommand()
 	ret.AddCommand(s.MakeCobraCommand())
 	ret.AddCommand(v.MakeCobraCommand())
 	ret.AddCommand(u.MakeCobraCommand())
 	ret.AddCommand(a.MakeCobraCommand())
+	ret.AddCommand(ver.MakeCobraCommand())
 	return ret
 }
