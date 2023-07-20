@@ -5,17 +5,5 @@ config:
   name: "syncer"
   primaryOwner: "infra-squad"
 
-# The logic to use for syncing.  Each logic can be used [0..N] times (never, once, or many).
-# Each logic will become an `import _ "..."` statement inside the generated sync file and expects to have a init()
-# function that will register syncing logic
-logic:
-  - source: github.com/cresta/syncer/sharedapi/drift/staticfile
-  - source: github.com/cresta/public-sync-modules/autoapprove
-
-# The syncs to run.  Each sync will be run in order.
-syncs:
-  - logic: staticfile
-    config:
-      filename: sync-example.txt
-      content: |
-        This is a file that will be synced v2
+children:
+  - source: github.com/cresta/public-sync-modules/opensourcegocli
