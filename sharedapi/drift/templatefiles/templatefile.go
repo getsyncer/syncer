@@ -20,7 +20,7 @@ type TemplateData[T TemplateConfig] struct {
 	Config  T
 }
 
-func NewGenerator[T TemplateConfig](files map[string]string, name string, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer) (*Generator[T], error) {
+func NewGenerator[T TemplateConfig](files map[string]string, name string, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer, loader files.StateLoader) (*Generator[T], error) {
 	if name == "" {
 		return nil, fmt.Errorf("name must be set")
 	}
@@ -39,6 +39,7 @@ func NewGenerator[T TemplateConfig](files map[string]string, name string, priori
 		decoder:    decoder,
 		logger:     logger,
 		setupLogic: setupLogic,
+		loader:     loader,
 	}, nil
 }
 
@@ -57,8 +58,8 @@ type NewModuleConfig[T TemplateConfig] struct {
 }
 
 func NewModule[T TemplateConfig](config NewModuleConfig[T]) fx.Option {
-	constructor := func(logger *zapctx.Logger) (*Generator[T], error) {
-		return NewGenerator(config.Files, config.Name, config.Priority, config.Decoder, logger, config.Setup)
+	constructor := func(logger *zapctx.Logger, loader files.StateLoader) (*Generator[T], error) {
+		return NewGenerator(config.Files, config.Name, config.Priority, config.Decoder, logger, config.Setup, loader)
 	}
 	return fx.Module(config.Name,
 		fx.Provide(
@@ -97,6 +98,7 @@ type Generator[T TemplateConfig] struct {
 	mutators   syncer.MutatorList[T]
 	setupLogic syncer.SetupSyncer
 	logger     *zapctx.Logger
+	loader     files.StateLoader
 }
 
 func (f *Generator[T]) Setup(ctx context.Context, runData *syncer.SyncRun) error {
@@ -116,7 +118,7 @@ func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files
 	if err != nil {
 		return nil, fmt.Errorf("unable to decode config: %w", err)
 	}
-	cfg, err = f.mutators.Mutate(ctx, runData, cfg)
+	cfg, err = f.mutators.Mutate(ctx, runData, f.loader, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to mutate config: %w", err)
 	}
@@ -178,7 +180,7 @@ type GenericConfigMutator[T TemplateConfig] struct {
 	MutateFunc  func(ctx context.Context, renderedTemplate string, cfg T) (T, error)
 }
 
-func (g *GenericConfigMutator[T]) Mutate(ctx context.Context, runData *syncer.SyncRun, cfg T) (T, error) {
+func (g *GenericConfigMutator[T]) Mutate(ctx context.Context, runData *syncer.SyncRun, _ files.StateLoader, cfg T) (T, error) {
 	updatedBuildGoLib, err := NewTemplate(g.Name, g.TemplateStr)
 	if err != nil {
 		return cfg, fmt.Errorf("unable to parse template: %w", err)
