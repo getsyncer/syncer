@@ -145,9 +145,10 @@ func loopAndExecuteSetup(ctx context.Context, syncer DriftSyncer, runData *SyncR
 }
 
 func (s *plannerImpl) mergeConfigs(ctx context.Context, rc *RootConfig) error {
-	for _, r := range rc.Syncs {
+	for idx := range rc.Syncs {
+		r := rc.Syncs[idx]
 		s.log.Debug(ctx, "Config before merge", zap.Any("config", r.Config), zap.String("config-as-yaml", ValOrErr(r.Config.AsYaml())))
-		if err := r.Config.Merge(rc.Config); err != nil {
+		if err := rc.Syncs[idx].Config.Merge(rc.Config); err != nil {
 			return fmt.Errorf("failed to merge run config: %w", err)
 		}
 		s.log.Debug(ctx, "Config after merge", zap.Any("config", r.Config), zap.String("config-as-yaml", ValOrErr(r.Config.AsYaml())))
@@ -158,6 +159,7 @@ func (s *plannerImpl) mergeConfigs(ctx context.Context, rc *RootConfig) error {
 func (s *plannerImpl) loopAndExecute(ctx context.Context, rc *RootConfig, wd string, toRun loopAndRunLogic) error {
 	for _, r := range rc.Syncs {
 		logic, exists := s.registry.Get(r.Logic)
+		s.log.Debug(ctx, "config for this execute", zap.Any("run-config", r.Config))
 		if !exists {
 			return fmt.Errorf("logic %s not found", r.Logic)
 		}

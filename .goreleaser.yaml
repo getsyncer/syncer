@@ -11,8 +11,8 @@ builds:
       - windows
       - darwin
     ldflags:
-      - -s -w -X .version={{.Version}} -X .commit={{.Commit}}  -X .date={{.Date}}  -X .builtBy=goreleaser
-    main:  
+      - -s -w -X ./internal/cli.version={{.Version}} -X ./internal/cli.commit={{.Commit}}  -X ./internal/cli.date={{.Date}}  -X ./internal/cli.builtBy=goreleaser
+    main:  ./cmd/syncer
 
 archives:
   - format: tar.gz

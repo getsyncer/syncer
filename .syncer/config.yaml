@@ -4,8 +4,8 @@ version: 1
 config:
   name: "syncer"
   primaryOwner: "infra-squad"
-  LinkerVarPath: ./internal/cli
-  MainDir: ./cmd/syncer
+  linkerVarPath: ./internal/cli
+  mainDir: ./cmd/syncer
 
 children:
   - source: github.com/cresta/public-sync-modules/opensourcegocli
