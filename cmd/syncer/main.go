@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/cresta/syncer/internal/cli"
-	"github.com/cresta/syncer/internal/git"
-	"github.com/cresta/syncer/sharedapi/log"
-	"github.com/cresta/syncer/sharedapi/syncer"
+	"github.com/getsyncer/syncer/internal/cli"
+	"github.com/getsyncer/syncer/internal/git"
+	"github.com/getsyncer/syncer/sharedapi/log"
+	"github.com/getsyncer/syncer/sharedapi/syncer"
 	"go.uber.org/fx"
 )
 

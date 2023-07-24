@@ -3,7 +3,7 @@ package syncer
 import (
 	"context"
 
-	"github.com/cresta/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files"
 )
 
 type Priority int

@@ -6,9 +6,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/cresta/syncer/internal/fxcli"
-	"github.com/cresta/syncer/sharedapi/files"
-	"github.com/cresta/syncer/sharedapi/files/fileprinter"
+	"github.com/getsyncer/syncer/internal/fxcli"
+	"github.com/getsyncer/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files/fileprinter"
 	"go.uber.org/fx"
 )
 

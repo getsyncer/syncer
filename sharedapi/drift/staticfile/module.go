@@ -1,7 +1,7 @@
 package staticfile
 
 import (
-	"github.com/cresta/syncer/sharedapi/syncer"
+	"github.com/getsyncer/syncer/sharedapi/syncer"
 	"go.uber.org/fx"
 )
 

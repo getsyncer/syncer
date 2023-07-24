@@ -17,6 +17,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
       - name: Check for changes
-        uses: cresta/action-syncer/checkpr@main
+        uses: getsyncer/action-syncer/checkpr@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

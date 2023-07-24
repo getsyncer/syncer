@@ -27,6 +27,6 @@ jobs:
           ref: ${{ steps.get-branch.outputs.branch }} 
           ssh-key: ${{ secrets.DEPLOY_KEY }} 
       - name: Run apply
-        uses: cresta/action-syncer/updatepr@main
+        uses: getsyncer/action-syncer/updatepr@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }} 

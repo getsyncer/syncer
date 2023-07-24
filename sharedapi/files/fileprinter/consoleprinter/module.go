@@ -1,7 +1,7 @@
 package consoleprinter
 
 import (
-	"github.com/cresta/syncer/sharedapi/files/fileprinter"
+	"github.com/getsyncer/syncer/sharedapi/files/fileprinter"
 	"go.uber.org/fx"
 )
 

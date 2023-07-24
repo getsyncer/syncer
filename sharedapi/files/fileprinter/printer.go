@@ -3,7 +3,7 @@ package fileprinter
 import (
 	"io"
 
-	"github.com/cresta/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files"
 )
 
 type Printer interface {

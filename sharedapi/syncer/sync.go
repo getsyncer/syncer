@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cresta/syncer/sharedapi/files/fileprinter/consoleprinter"
+	"github.com/getsyncer/syncer/sharedapi/files/fileprinter/consoleprinter"
 
-	"github.com/cresta/syncer/sharedapi/files/osfiles"
+	"github.com/getsyncer/syncer/sharedapi/files/osfiles"
 
-	"github.com/cresta/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files"
 
-	"github.com/cresta/syncer/sharedapi/log"
+	"github.com/getsyncer/syncer/sharedapi/log"
 
 	"go.uber.org/fx"
 

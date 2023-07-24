@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cresta/syncer/internal/fxcli"
+	"github.com/getsyncer/syncer/internal/fxcli"
 
 	"github.com/spf13/cobra"
 

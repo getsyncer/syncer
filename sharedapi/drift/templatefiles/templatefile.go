@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/cresta/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files"
 
-	"github.com/Masterminds/sprig/v3"
-	"github.com/cresta/syncer/sharedapi/syncer"
 	"github.com/cresta/zapctx"
+	"github.com/getsyncer/syncer/sharedapi/syncer"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )

@@ -10,9 +10,9 @@ import (
 	"text/template"
 
 	"github.com/cresta/pipe"
-	"github.com/cresta/syncer/internal/git"
-	"github.com/cresta/syncer/sharedapi/syncer"
 	"github.com/cresta/zapctx"
+	"github.com/getsyncer/syncer/internal/git"
+	"github.com/getsyncer/syncer/sharedapi/syncer"
 	"go.uber.org/zap"
 )
 
@@ -240,7 +240,7 @@ import (
 {{ range $val := .Children }}
      _ "{{$val.SourceWithoutVersion}}"
 {{- end }}
-	"github.com/cresta/syncer/sharedapi/syncer"
+	"github.com/getsyncer/syncer/sharedapi/syncer"
 )
 
 func main() {

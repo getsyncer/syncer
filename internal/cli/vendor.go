@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cresta/syncer/internal/git"
-	"github.com/cresta/syncer/sharedapi/syncer"
 	"github.com/cresta/zapctx"
+	"github.com/getsyncer/syncer/internal/git"
+	"github.com/getsyncer/syncer/sharedapi/syncer"
 	"github.com/spf13/cobra"
 )
 

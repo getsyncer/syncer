@@ -1,7 +1,7 @@
 package osfiles
 
 import (
-	"github.com/cresta/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files"
 	"go.uber.org/fx"
 )
 

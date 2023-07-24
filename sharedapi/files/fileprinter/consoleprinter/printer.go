@@ -5,8 +5,8 @@ import (
 	"io"
 
 	"github.com/andreyvit/diff"
-	"github.com/cresta/syncer/sharedapi/files"
-	"github.com/cresta/syncer/sharedapi/files/fileprinter"
+	"github.com/getsyncer/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files/fileprinter"
 )
 
 type consolePrinterImpl struct{}

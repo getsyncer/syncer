@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cresta/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files"
 
-	"github.com/cresta/syncer/sharedapi/syncer"
+	"github.com/getsyncer/syncer/sharedapi/syncer"
 )
 
 type Config struct {
