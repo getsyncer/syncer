@@ -51,6 +51,12 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: go.sum
           cache: true
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ vars.AUTOUPDATE_BOT_APP_ID }}
+          private_key: ${{ secrets.AUTOUPDATE_BOT_PEM }}
       - uses: go-semantic-release/action@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.DEPLOY_KEY }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
