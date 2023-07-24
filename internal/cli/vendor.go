@@ -2,12 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/cresta/zapctx"
 	"github.com/getsyncer/syncer/internal/git"
 	"github.com/getsyncer/syncer/sharedapi/syncer"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 )
 
 type vendorCmd struct {

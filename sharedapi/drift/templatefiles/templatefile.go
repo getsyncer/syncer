@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"text/template"
+
 	"github.com/Masterminds/sprig/v3"
 	"github.com/cresta/zapctx"
 	"github.com/getsyncer/syncer/sharedapi/files"
 	"github.com/getsyncer/syncer/sharedapi/syncer"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"text/template"
 )
 
 type TemplateData[T TemplateConfig] struct {
