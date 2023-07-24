@@ -4,7 +4,13 @@ name: Release binaries using GoReleaser
 
 on:
   pull_request:
+    branches:
+      - main
   push:
+    tags:
+      - v*
+    branches:
+      - main
 
 permissions:
   contents: write
