@@ -18,6 +18,9 @@ brews:
   - repository:
       owner: getsyncer
       name: homebrew-tap
+      git:
+        url: git@github.com:getsyncer/homebrew-tap.git
+        private_key: '{{ .Env.HOMEBREW_PUBLISH_PEM }}'
 
 archives:
   - format: tar.gz
