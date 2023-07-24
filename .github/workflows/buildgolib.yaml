@@ -52,7 +52,5 @@ jobs:
           cache-dependency-path: go.sum
           cache: true
       - uses: go-semantic-release/action@v1
-        with:
-          hooks: goreleaser
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.DEPLOY_KEY }}
