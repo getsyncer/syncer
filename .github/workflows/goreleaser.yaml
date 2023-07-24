@@ -18,6 +18,12 @@ jobs:
         uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v4
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: 366049
+          private_key: ${{ secrets.HOMEBREW_PUBLISH_PEM }}
       - name: Run GoReleaser check
         uses: goreleaser/goreleaser-action@v4
         with:
@@ -25,7 +31,7 @@ jobs:
           version: latest
           args: check
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: {{ steps.generate_token.outputs.token }}
       - name: Run GoReleaser release
         uses: goreleaser/goreleaser-action@v4
         if: startsWith(github.ref, 'refs/tags/')
@@ -34,5 +40,4 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_DEPLOY_KEY: ${{ secrets.HOMEBREW_DEPLOY_KEY }}
+          GITHUB_TOKEN: {{ steps.generate_token.outputs.token }}

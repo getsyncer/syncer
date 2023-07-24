@@ -18,8 +18,6 @@ brews:
   - repository:
       owner: getsyncer
       name: homebrew-tap
-      git:
-        private_key: "{{ .Env.HOMEBREW_DEPLOY_KEY }}"
 
 archives:
   - format: tar.gz
