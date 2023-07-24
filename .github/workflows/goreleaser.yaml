@@ -24,6 +24,7 @@ jobs:
         with:
           app_id: 366049
           private_key: ${{ secrets.HOMEBREW_PUBLISH_PEM }}
+          repository: getsyncer/homebrew-tap
       - name: Run GoReleaser check
         uses: goreleaser/goreleaser-action@v4
         with:
