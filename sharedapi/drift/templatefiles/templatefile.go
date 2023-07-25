@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/Masterminds/sprig/v3"
 	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/cresta/zapctx"
 	"github.com/getsyncer/syncer/sharedapi/files"
 	"github.com/getsyncer/syncer/sharedapi/syncer"
