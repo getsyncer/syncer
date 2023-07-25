@@ -3,22 +3,16 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"github.com/getsyncer/syncer/internal/git"
 	"os"
 
-	"github.com/getsyncer/syncer/sharedapi/files/fileprinter/consoleprinter"
-
-	"github.com/getsyncer/syncer/sharedapi/files/osfiles"
-
-	"github.com/getsyncer/syncer/sharedapi/files"
-
-	"github.com/getsyncer/syncer/sharedapi/log"
-
-	"go.uber.org/fx"
-
-	"go.uber.org/zap"
-
 	"github.com/cresta/zapctx"
+	"github.com/getsyncer/syncer/internal/git"
+	"github.com/getsyncer/syncer/sharedapi/files"
+	"github.com/getsyncer/syncer/sharedapi/files/fileprinter/consoleprinter"
+	"github.com/getsyncer/syncer/sharedapi/files/osfiles"
+	"github.com/getsyncer/syncer/sharedapi/log"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
 type Planner interface {

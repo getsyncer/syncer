@@ -3,8 +3,9 @@ package files
 import (
 	"context"
 	"fmt"
-	"github.com/getsyncer/syncer/internal/git"
 	"strings"
+
+	"github.com/getsyncer/syncer/internal/git"
 )
 
 type Tracker interface {
