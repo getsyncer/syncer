@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/Masterminds/sprig/v3"
 	"text/template"
 
-	"github.com/Masterminds/sprig/v3"
 	"github.com/cresta/zapctx"
 	"github.com/getsyncer/syncer/sharedapi/files"
 	"github.com/getsyncer/syncer/sharedapi/syncer"
@@ -19,7 +19,7 @@ type TemplateData[T TemplateConfig] struct {
 	Config  T
 }
 
-func NewGenerator[T TemplateConfig](files map[string]string, name string, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer, loader files.StateLoader) (*Generator[T], error) {
+func NewGenerator[T TemplateConfig](files map[string]string, name syncer.Name, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer, loader files.StateLoader) (*Generator[T], error) {
 	if name == "" {
 		return nil, fmt.Errorf("name must be set")
 	}
@@ -49,7 +49,7 @@ func NewTemplate(name string, data string) (*template.Template, error) {
 type Decoder[T TemplateConfig] func(syncer.RunConfig) (T, error)
 
 type NewModuleConfig[T TemplateConfig] struct {
-	Name     string
+	Name     syncer.Name
 	Files    map[string]string
 	Priority syncer.Priority
 	Decoder  Decoder[T]
@@ -58,9 +58,15 @@ type NewModuleConfig[T TemplateConfig] struct {
 
 func NewModule[T TemplateConfig](config NewModuleConfig[T]) fx.Option {
 	constructor := func(logger *zapctx.Logger, loader files.StateLoader) (*Generator[T], error) {
+		if config.Priority == 0 {
+			config.Priority = syncer.PriorityNormal
+		}
+		if config.Decoder == nil {
+			config.Decoder = DefaultDecoder[T]()
+		}
 		return NewGenerator(config.Files, config.Name, config.Priority, config.Decoder, logger, config.Setup, loader)
 	}
-	return fx.Module(config.Name,
+	return fx.Module(config.Name.String(),
 		fx.Provide(
 			fx.Annotate(
 				constructor,
@@ -91,7 +97,7 @@ type MergableConfig interface {
 
 type Generator[T TemplateConfig] struct {
 	files      map[string]*template.Template
-	name       string
+	name       syncer.Name
 	priority   syncer.Priority
 	decoder    func(syncer.RunConfig) (T, error)
 	mutators   syncer.MutatorList[T]
@@ -112,7 +118,7 @@ func (f *Generator[T]) AddMutator(mutator syncer.ConfigMutator[T]) {
 }
 
 func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files.System[*files.StateWithChangeReason], error) {
-	f.logger.Debug(ctx, "running templatefile", zap.String("name", f.name))
+	f.logger.Debug(ctx, "running templatefile", zap.String("name", string(f.name)))
 	cfg, err := f.decoder(runData.RunConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to decode config: %w", err)
@@ -162,7 +168,7 @@ func ExecuteTemplateOnConfig[T TemplateConfig](_ context.Context, runData *synce
 	return into.String(), nil
 }
 
-func (f *Generator[T]) Name() string {
+func (f *Generator[T]) Name() syncer.Name {
 	return f.name
 }
 
@@ -174,13 +180,13 @@ var _ syncer.DriftSyncer = &Generator[TemplateConfig]{}
 var _ syncer.SetupSyncer = &Generator[TemplateConfig]{}
 
 type GenericConfigMutator[T TemplateConfig] struct {
-	Name        string
-	TemplateStr string
-	MutateFunc  func(ctx context.Context, renderedTemplate string, cfg T) (T, error)
+	TemplateName string
+	TemplateStr  string
+	MutateFunc   func(ctx context.Context, renderedTemplate string, cfg T) (T, error)
 }
 
 func (g *GenericConfigMutator[T]) Mutate(ctx context.Context, runData *syncer.SyncRun, _ files.StateLoader, cfg T) (T, error) {
-	updatedBuildGoLib, err := NewTemplate(g.Name, g.TemplateStr)
+	updatedBuildGoLib, err := NewTemplate(g.TemplateName, g.TemplateStr)
 	if err != nil {
 		return cfg, fmt.Errorf("unable to parse template: %w", err)
 	}

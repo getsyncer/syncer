@@ -18,7 +18,7 @@ const (
 
 type DriftSyncer interface {
 	Run(ctx context.Context, runData *SyncRun) (*files.System[*files.StateWithChangeReason], error)
-	Name() string
+	Name() Name
 	Priority() Priority
 }
 

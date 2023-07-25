@@ -47,7 +47,7 @@ func (f *Syncer) Run(_ context.Context, runData *syncer.SyncRun) (*files.System[
 	return &ret, nil
 }
 
-func (f *Syncer) Name() string {
+func (f *Syncer) Name() syncer.Name {
 	return "staticfile"
 }
 

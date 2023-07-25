@@ -48,7 +48,7 @@ func (m *MutatorList[T]) Mutate(ctx context.Context, runData *SyncRun, loader fi
 	return cfg, nil
 }
 
-func AddMutator[T DriftConfig](r Registry, name string, mutator ConfigMutator[T]) error {
+func AddMutator[T DriftConfig](r Registry, name Name, mutator ConfigMutator[T]) error {
 	s, ok := r.Get(name)
 	if !ok {
 		return fmt.Errorf("syncer %s not found", name)
@@ -63,7 +63,7 @@ func AddMutator[T DriftConfig](r Registry, name string, mutator ConfigMutator[T]
 
 type SetupMutator[T DriftConfig] struct {
 	Mutator ConfigMutator[T]
-	Name    string
+	Name    Name
 }
 
 func (s *SetupMutator[T]) Setup(_ context.Context, runData *SyncRun) error {

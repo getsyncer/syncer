@@ -5,9 +5,15 @@ import (
 	"sync"
 )
 
+type Name string
+
+func (n Name) String() string {
+	return string(n)
+}
+
 type Registry interface {
 	Registered() []DriftSyncer
-	Get(name string) (DriftSyncer, bool)
+	Get(name Name) (DriftSyncer, bool)
 }
 
 type registry struct {
@@ -18,17 +24,17 @@ type registry struct {
 func NewRegistry(syncers []DriftSyncer) (Registry, error) {
 	seen := map[string]struct{}{}
 	for _, s := range syncers {
-		if _, ok := seen[s.Name()]; ok {
-			return nil, &ErrSyncerAlreadyRegistered{Name: s.Name()}
+		if _, ok := seen[string(s.Name())]; ok {
+			return nil, &ErrSyncerAlreadyRegistered{Name: string(s.Name())}
 		}
-		seen[s.Name()] = struct{}{}
+		seen[string(s.Name())] = struct{}{}
 	}
 	return &registry{
 		syncers: syncers,
 	}, nil
 }
 
-func (r *registry) Get(name string) (DriftSyncer, bool) {
+func (r *registry) Get(name Name) (DriftSyncer, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, s := range r.syncers {

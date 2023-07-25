@@ -8,7 +8,7 @@ import (
 )
 
 type ChildrenRegistry interface {
-	Get(name string) (ChildConfig, bool)
+	Get(name Name) (ChildConfig, bool)
 }
 
 type childrenRegistry struct {
@@ -19,17 +19,17 @@ type childrenRegistry struct {
 func NewChildrenRegistry(children ...ChildConfig) (ChildrenRegistry, error) {
 	seen := map[string]struct{}{}
 	for _, s := range children {
-		if _, ok := seen[s.Name]; ok {
+		if _, ok := seen[s.Name.String()]; ok {
 			return nil, fmt.Errorf("child already registered: %s", s.Name)
 		}
-		seen[s.Name] = struct{}{}
+		seen[s.Name.String()] = struct{}{}
 	}
 	return &childrenRegistry{
 		children: children,
 	}, nil
 }
 
-func (c *childrenRegistry) Get(name string) (ChildConfig, bool) {
+func (c *childrenRegistry) Get(name Name) (ChildConfig, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.children == nil {
@@ -47,17 +47,17 @@ var _ ChildrenRegistry = &childrenRegistry{}
 
 type ChildConfig struct {
 	Content []byte
-	Name    string
+	Name    Name
 }
 
-func NewChildModule(name string, content []byte) fx.Option {
+func NewChildModule(name Name, content []byte) fx.Option {
 	constructor := func() ChildConfig {
 		return ChildConfig{
 			Content: content,
 			Name:    name,
 		}
 	}
-	return fx.Module(name,
+	return fx.Module(name.String(),
 		fx.Provide(
 			fx.Annotate(
 				constructor,
