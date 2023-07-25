@@ -7,7 +7,7 @@ require (
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/cresta/pipe v0.0.1
 	github.com/cresta/zapctx v0.0.3
-	github.com/go-git/go-billy/v5 v5.3.1
+	github.com/go-git/go-billy/v5 v5.4.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.3
