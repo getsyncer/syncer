@@ -33,7 +33,7 @@ func (c *ConfigLogic) SourceVersion() string {
 }
 
 type ConfigSyncs struct {
-	Logic  string    `yaml:"logic"`
+	Logic  Name      `yaml:"logic"`
 	ID     string    `yaml:"id"`
 	Config RunConfig `yaml:"config"`
 }
@@ -152,7 +152,7 @@ func (c *DefaultConfigLoader) FlattenChildren(_ context.Context, root *RootConfi
 		originalChildren := root.Children
 		root.Children = nil
 		for _, child := range originalChildren {
-			content, exists := c.childrenRegistry.Get(child.Source)
+			content, exists := c.childrenRegistry.Get(Name(child.Source))
 			if !exists {
 				return fmt.Errorf("unknown child: %s", child.Source)
 			}
