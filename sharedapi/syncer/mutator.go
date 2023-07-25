@@ -89,6 +89,14 @@ type ParserMutator[T DriftConfig] struct {
 	Apply ParserApply[T]
 }
 
+func DefaultParseMutator[T ApplyableConfig[T]](path files.Path) *ParserMutator[T] {
+	return &ParserMutator[T]{
+		Path:  path,
+		Conf:  existingfileparser.RecommendedNewlineSeparatedConfig(),
+		Apply: ConfigApply[T](),
+	}
+}
+
 func (p *ParserMutator[T]) Mutate(ctx context.Context, runData *SyncRun, loader files.StateLoader, cfg T) (T, error) {
 	pr, err := existingfileparser.Parse(ctx, loader, p.Path, p.Conf)
 	if err != nil {

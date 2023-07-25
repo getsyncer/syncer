@@ -101,6 +101,14 @@ func (f *System[T]) RemoveTracked(path Path) error {
 	return nil
 }
 
+func (f *System[T]) RemoveAll(paths []Path) {
+	for _, path := range paths {
+		if f.IsTracked(path) {
+			delete(f.files, path)
+		}
+	}
+}
+
 type MergeDuplicatePathErr[T Validatable] struct {
 	Path   Path
 	Value1 T

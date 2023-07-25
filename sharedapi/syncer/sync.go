@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"github.com/getsyncer/syncer/internal/git"
 	"os"
 
 	"github.com/getsyncer/syncer/sharedapi/files/fileprinter/consoleprinter"
@@ -28,12 +29,13 @@ type Applier interface {
 	Apply(ctx context.Context, stateDiff *files.System[*files.DiffWithChangeReason]) error
 }
 
-func NewPlanner(registry Registry, configLoader ConfigLoader, log *zapctx.Logger, stateLoader files.StateLoader) Planner {
+func NewPlanner(registry Registry, configLoader ConfigLoader, log *zapctx.Logger, stateLoader files.StateLoader, tracker files.Tracker) Planner {
 	return &plannerImpl{
 		registry:     registry,
 		configLoader: configLoader,
 		log:          log,
 		stateLoader:  stateLoader,
+		tracker:      tracker,
 	}
 }
 
@@ -42,6 +44,7 @@ type plannerImpl struct {
 	configLoader ConfigLoader
 	log          *zapctx.Logger
 	stateLoader  files.StateLoader
+	tracker      files.Tracker
 }
 
 var _ Planner = &plannerImpl{}
@@ -76,6 +79,19 @@ func (s *plannerImpl) Plan(ctx context.Context) (*files.System[*files.DiffWithCh
 	finalExpectedState, err := files.SystemMerge(changes...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to merge changes: %w", err)
+	}
+	allSyncedFiles, err := s.tracker.SyncedFiles(ctx, wd, MagicTrackedString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tracked files: %w", err)
+	}
+	allSyncedFiles.RemoveAll(finalExpectedState.Paths())
+	removals, err := files.ConvertToRemovals(allSyncedFiles)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert to removals: %w", err)
+	}
+	finalExpectedState, err = files.SystemMerge(finalExpectedState, removals)
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge removals: %w", err)
 	}
 	allPaths := finalExpectedState.Paths()
 	s.log.Debug(ctx, "Loading existing state", zap.Any("paths", allPaths))
@@ -187,6 +203,8 @@ func DefaultFxOptions() fx.Option {
 	return fx.Module("defaults",
 		log.Module,
 		Module,
+		files.Module,
+		git.Module,
 	)
 }
 
