@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/getsyncer/syncer-core/git"
+	"github.com/getsyncer/syncer-core/log"
+	"github.com/getsyncer/syncer-core/syncer"
 	"github.com/getsyncer/syncer/internal/cli"
-	"github.com/getsyncer/syncer/internal/git"
-	"github.com/getsyncer/syncer/sharedapi/log"
-	"github.com/getsyncer/syncer/sharedapi/syncer"
 	"go.uber.org/fx"
 )
 

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/cresta/zapctx"
-	"github.com/getsyncer/syncer/internal/git"
-	"github.com/getsyncer/syncer/sharedapi/syncer"
+	"github.com/getsyncer/syncer-core/git"
+	"github.com/getsyncer/syncer-core/syncer"
 	"github.com/spf13/cobra"
 )
 

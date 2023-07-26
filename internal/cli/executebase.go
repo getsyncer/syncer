@@ -9,10 +9,11 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/getsyncer/syncer-core/git"
+
 	"github.com/cresta/pipe"
 	"github.com/cresta/zapctx"
-	"github.com/getsyncer/syncer/internal/git"
-	"github.com/getsyncer/syncer/sharedapi/syncer"
+	"github.com/getsyncer/syncer-core/syncer"
 	"go.uber.org/zap"
 )
 
@@ -240,7 +241,7 @@ import (
 {{ range $val := .Children }}
      _ "{{$val.SourceWithoutVersion}}"
 {{- end }}
-	"github.com/getsyncer/syncer/sharedapi/syncer"
+	"github.com/getsyncer/syncer-core/syncer"
 )
 
 func main() {

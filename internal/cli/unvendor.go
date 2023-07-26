@@ -5,8 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/getsyncer/syncer-core/git"
+
 	"github.com/cresta/zapctx"
-	"github.com/getsyncer/syncer/internal/git"
 	"github.com/spf13/cobra"
 )
 

@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/getsyncer/syncer/internal/fxcli"
+	"github.com/getsyncer/syncer-core/fxcli"
 
 	"github.com/spf13/cobra"
-
 	"go.uber.org/fx"
 )
 
