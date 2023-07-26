@@ -208,7 +208,7 @@ func (p *PostGenConfigMutator[T]) MakeMutator(renderedTemplate string) syncer.Co
 	})
 }
 
-func (p *PostGenConfigMutator[T]) PostGenProcess(ctx context.Context, fs *files.System[*files.StateWithChangeReason], runData *syncer.SyncRun) error {
+func (p *PostGenConfigMutator[T]) PostGenProcess(_ context.Context, fs *files.System[*files.StateWithChangeReason], runData *syncer.SyncRun) error {
 	s, exists := fs.Remove(files.Path(p.TemplateName))
 	if !exists {
 		return fmt.Errorf("unable to find template file %s", p.TemplateName)
