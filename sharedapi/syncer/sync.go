@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/cresta/zapctx"
 	"github.com/getsyncer/syncer/internal/git"
@@ -59,6 +60,7 @@ func (s *plannerImpl) Plan(ctx context.Context) (*files.System[*files.DiffWithCh
 		return nil, fmt.Errorf("failed to merge configs: %w", err)
 	}
 	wd, err := os.Getwd()
+	rc.Syncs = SortSyncs(rc.Syncs, s.registry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get working directory: %w", err)
 	}
@@ -129,6 +131,20 @@ func printConfigIfDebug(ctx context.Context, logger *zapctx.Logger, rc *RootConf
 		}
 		fmt.Println(asY)
 	}
+}
+
+func SortSyncs(syncs []ConfigSyncs, reg Registry) []ConfigSyncs {
+	ret := make([]ConfigSyncs, 0, len(syncs))
+	sort.SliceStable(syncs, func(i, j int) bool {
+		iLogic, iExists := reg.Get(syncs[i].Logic)
+		jLogic, jExists := reg.Get(syncs[j].Logic)
+		if !iExists || !jExists {
+			return syncs[i].Logic < syncs[j].Logic
+		}
+		return iLogic.Priority() > jLogic.Priority()
+	})
+	ret = append(ret, syncs...)
+	return ret
 }
 
 type loopAndRunLogic func(ctx context.Context, syncer DriftSyncer, runData *SyncRun) error

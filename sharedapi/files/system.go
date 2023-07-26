@@ -79,11 +79,24 @@ func (f *System[T]) Paths() []Path {
 }
 
 func (f *System[T]) Get(path Path) T {
+	path = path.Clean()
 	return f.files[path]
 }
 
+func (f *System[T]) Remove(path Path) (T, bool) {
+	path = path.Clean()
+	if f.IsTracked(path) {
+		ret := f.files[path]
+		delete(f.files, path)
+		return ret, true
+	}
+	var ret T
+	return ret, false
+}
+
 func (f *System[T]) IsTracked(path Path) bool {
-	if f.files == nil {
+	path = path.Clean()
+	if f == nil || f.files == nil {
 		return false
 	}
 	_, ok := f.files[path]
@@ -91,6 +104,7 @@ func (f *System[T]) IsTracked(path Path) bool {
 }
 
 func (f *System[T]) RemoveTracked(path Path) error {
+	path = path.Clean()
 	if f.files == nil {
 		return fmt.Errorf("file %s does not exist", path)
 	}
@@ -103,6 +117,7 @@ func (f *System[T]) RemoveTracked(path Path) error {
 
 func (f *System[T]) RemoveAll(paths []Path) {
 	for _, path := range paths {
+		path = path.Clean()
 		if f.IsTracked(path) {
 			delete(f.files, path)
 		}

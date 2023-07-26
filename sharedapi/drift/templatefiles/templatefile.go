@@ -22,7 +22,7 @@ type TemplateData[T TemplateConfig] struct {
 	Config  T
 }
 
-func NewGenerator[T TemplateConfig](files map[string]string, name syncer.Name, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer, loader files.StateLoader) (*Generator[T], error) {
+func NewGenerator[T TemplateConfig](files map[string]string, name syncer.Name, priority syncer.Priority, decoder Decoder[T], logger *zapctx.Logger, setupLogic syncer.SetupSyncer, loader files.StateLoader, postGenProcessor PostGenProcessor) (*Generator[T], error) {
 	if name == "" {
 		return nil, fmt.Errorf("name must be set")
 	}
@@ -35,13 +35,14 @@ func NewGenerator[T TemplateConfig](files map[string]string, name syncer.Name, p
 		generatedTemplates[k] = tmpl
 	}
 	return &Generator[T]{
-		files:      generatedTemplates,
-		name:       name,
-		priority:   priority,
-		decoder:    decoder,
-		logger:     logger,
-		setupLogic: setupLogic,
-		loader:     loader,
+		files:            generatedTemplates,
+		name:             name,
+		priority:         priority,
+		decoder:          decoder,
+		logger:           logger,
+		postGenProcessor: postGenProcessor,
+		setupLogic:       setupLogic,
+		loader:           loader,
 	}, nil
 }
 
@@ -64,11 +65,12 @@ func toYAML(v interface{}) (string, error) {
 type Decoder[T TemplateConfig] func(syncer.RunConfig) (T, error)
 
 type NewModuleConfig[T TemplateConfig] struct {
-	Name     syncer.Name
-	Files    map[string]string
-	Priority syncer.Priority
-	Decoder  Decoder[T]
-	Setup    syncer.SetupSyncer
+	Name             syncer.Name
+	Files            map[string]string
+	Priority         syncer.Priority
+	Decoder          Decoder[T]
+	Setup            syncer.SetupSyncer
+	PostGenProcessor PostGenProcessor
 }
 
 func NewModule[T TemplateConfig](config NewModuleConfig[T]) fx.Option {
@@ -79,7 +81,10 @@ func NewModule[T TemplateConfig](config NewModuleConfig[T]) fx.Option {
 		if config.Decoder == nil {
 			config.Decoder = DefaultDecoder[T]()
 		}
-		return NewGenerator(config.Files, config.Name, config.Priority, config.Decoder, logger, config.Setup, loader)
+		if config.PostGenProcessor == nil {
+			config.PostGenProcessor = PostGenProcessorList{}
+		}
+		return NewGenerator(config.Files, config.Name, config.Priority, config.Decoder, logger, config.Setup, loader, config.PostGenProcessor)
 	}
 	return fx.Module(config.Name.String(),
 		fx.Provide(
@@ -111,14 +116,15 @@ type MergableConfig interface {
 }
 
 type Generator[T TemplateConfig] struct {
-	files      map[string]*template.Template
-	name       syncer.Name
-	priority   syncer.Priority
-	decoder    func(syncer.RunConfig) (T, error)
-	mutators   syncer.MutatorList[T]
-	setupLogic syncer.SetupSyncer
-	logger     *zapctx.Logger
-	loader     files.StateLoader
+	files            map[string]*template.Template
+	name             syncer.Name
+	priority         syncer.Priority
+	decoder          func(syncer.RunConfig) (T, error)
+	mutators         syncer.MutatorList[T]
+	setupLogic       syncer.SetupSyncer
+	logger           *zapctx.Logger
+	postGenProcessor PostGenProcessor
+	loader           files.StateLoader
 }
 
 func (f *Generator[T]) Setup(ctx context.Context, runData *syncer.SyncRun) error {
@@ -130,6 +136,10 @@ func (f *Generator[T]) Setup(ctx context.Context, runData *syncer.SyncRun) error
 
 func (f *Generator[T]) AddMutator(mutator syncer.ConfigMutator[T]) {
 	f.mutators.AddMutator(mutator)
+}
+
+func (f *Generator[T]) PostGenProcess(ctx context.Context, fs *files.System[*files.StateWithChangeReason], runData *syncer.SyncRun) error {
+	return f.postGenProcessor.PostGenProcess(ctx, fs, runData)
 }
 
 func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files.System[*files.StateWithChangeReason], error) {
@@ -163,7 +173,50 @@ func (f *Generator[T]) Run(ctx context.Context, runData *syncer.SyncRun) (*files
 			return nil, fmt.Errorf("unable to add file %s: %w", k, err)
 		}
 	}
+	if err := f.PostGenProcess(ctx, &ret, runData); err != nil {
+		return nil, fmt.Errorf("unable to post gen process: %w", err)
+	}
 	return &ret, nil
+}
+
+type PostGenProcessor interface {
+	PostGenProcess(ctx context.Context, fs *files.System[*files.StateWithChangeReason], runData *syncer.SyncRun) error
+}
+
+type PostGenProcessorList []PostGenProcessor
+
+func (p PostGenProcessorList) PostGenProcess(ctx context.Context, fs *files.System[*files.StateWithChangeReason], runData *syncer.SyncRun) error {
+	for _, v := range p {
+		if err := v.PostGenProcess(ctx, fs, runData); err != nil {
+			return fmt.Errorf("unable to post gen process: %w", err)
+		}
+	}
+	return nil
+}
+
+type PostGenConfigMutator[T TemplateConfig] struct {
+	ToMutate           syncer.Name
+	TemplateName       string
+	PostGenMutatorFunc PostGenMutatorFunc[T]
+}
+
+type PostGenMutatorFunc[T TemplateConfig] func(ctx context.Context, renderedTemplate string, cfg T) (T, error)
+
+func (p *PostGenConfigMutator[T]) MakeMutator(renderedTemplate string) syncer.ConfigMutator[T] {
+	return syncer.ConfigMutatorFunc[T](func(ctx context.Context, runData *syncer.SyncRun, loader files.StateLoader, cfg T) (T, error) {
+		return p.PostGenMutatorFunc(ctx, renderedTemplate, cfg)
+	})
+}
+
+func (p *PostGenConfigMutator[T]) PostGenProcess(ctx context.Context, fs *files.System[*files.StateWithChangeReason], runData *syncer.SyncRun) error {
+	s, exists := fs.Remove(files.Path(p.TemplateName))
+	if !exists {
+		return fmt.Errorf("unable to find template file %s", p.TemplateName)
+	}
+	if err := syncer.AddMutator(runData.Registry, p.ToMutate, p.MakeMutator(string(s.State.Contents))); err != nil {
+		return fmt.Errorf("unable to add mutator: %w", err)
+	}
+	return nil
 }
 
 func (f *Generator[T]) generate(ctx context.Context, runData *syncer.SyncRun, config T, tmpl *template.Template) (string, error) {
