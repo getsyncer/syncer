@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	"gopkg.in/yaml.v3"
+
 	"github.com/cresta/zapctx"
 	"github.com/getsyncer/syncer/sharedapi/files"
 	"github.com/getsyncer/syncer/sharedapi/syncer"
@@ -43,8 +46,20 @@ func NewGenerator[T TemplateConfig](files map[string]string, name syncer.Name, p
 }
 
 func NewTemplate(name string, data string) (*template.Template, error) {
-	return template.New(name).Funcs(sprig.TxtFuncMap()).Parse(data)
+	tm := sprig.TxtFuncMap()
+	tm["toYaml"] = toYAML
+	return template.New(name).Funcs(tm).Parse(data)
 }
+
+func toYAML(v interface{}) (string, error) {
+	data, err := yaml.Marshal(v)
+	if err != nil {
+		return "", fmt.Errorf("unable to marshal to yaml: %w", err)
+	}
+	return strings.TrimSuffix(string(data), "\n"), nil
+}
+
+// Taken from https://github.com/helm/helm/blob/main/pkg/engine/funcs.go#L30
 
 type Decoder[T TemplateConfig] func(syncer.RunConfig) (T, error)
 
