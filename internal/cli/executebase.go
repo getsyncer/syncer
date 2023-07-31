@@ -9,21 +9,24 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/getsyncer/syncer-core/config/configloader"
+
+	"github.com/getsyncer/syncer-core/config"
+
 	"github.com/getsyncer/syncer-core/git"
 
 	"github.com/cresta/pipe"
 	"github.com/cresta/zapctx"
-	"github.com/getsyncer/syncer-core/syncer"
 	"go.uber.org/zap"
 )
 
 type executeBase struct {
 	git    git.Git
-	loader syncer.ConfigLoader
+	loader configloader.ConfigLoader
 	logger *zapctx.Logger
 }
 
-func newExecuteBase(git git.Git, loader syncer.ConfigLoader, logger *zapctx.Logger) *executeBase {
+func newExecuteBase(git git.Git, loader configloader.ConfigLoader, logger *zapctx.Logger) *executeBase {
 	return &executeBase{
 		git:    git,
 		loader: loader,
@@ -58,7 +61,7 @@ func (r *executeBase) Execute(ctx context.Context, execCmd string, extraEnv stri
 		return fmt.Errorf("failed to get temp path for syncer: %w", err)
 	}
 	r.logger.Debug(ctx, "Running syncer program", zap.String("path", syncerBinaryPath))
-	// Run go build with tag "syncer"
+	// Dynamic go build with tag "syncer"
 	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", syncerBinaryPath, "sync.go").WithDir(wd).Run(ctx); err != nil {
 		return fmt.Errorf("failed to build syncer: %w", err)
 	}
@@ -118,7 +121,7 @@ func tempPathForSyncer() (string, error) {
 	return fileName, nil
 }
 
-func setupSync(ctx context.Context, logger *zapctx.Logger, rc *syncer.RootConfig) (string, func() error, error) {
+func setupSync(ctx context.Context, logger *zapctx.Logger, rc *config.Root) (string, func() error, error) {
 	// If there is a vendored sync file, do nothing
 	vendoredFileLoc := filepath.Join(".syncer", "sync.go")
 	if _, err := os.Stat(vendoredFileLoc); err == nil {
@@ -141,9 +144,9 @@ func setupSync(ctx context.Context, logger *zapctx.Logger, rc *syncer.RootConfig
 	return td, cleanup, nil
 }
 
-func initGoModAndImport(ctx context.Context, logger *zapctx.Logger, rc *syncer.RootConfig, td string) error {
+func initGoModAndImport(ctx context.Context, logger *zapctx.Logger, rc *config.Root, td string) error {
 	logger.Debug(ctx, "Running go mod init")
-	// 2. Run `go mod init syncer` in that directory if there is no go.mod file
+	// 2. Dynamic `go mod init syncer` in that directory if there is no go.mod file
 	if err := pipe.NewPiped("go", "mod", "init", "syncer").WithDir(td).Run(ctx); err != nil {
 		return fmt.Errorf("failed to run go mod init")
 	}
@@ -164,7 +167,7 @@ func initGoModAndImport(ctx context.Context, logger *zapctx.Logger, rc *syncer.R
 	return nil
 }
 
-func loadSyncerFile(ctx context.Context, g git.Git, loader syncer.ConfigLoader) (*syncer.RootConfig, error) {
+func loadSyncerFile(ctx context.Context, g git.Git, loader configloader.ConfigLoader) (*config.Root, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get working directory: %w", err)
@@ -173,7 +176,7 @@ func loadSyncerFile(ctx context.Context, g git.Git, loader syncer.ConfigLoader) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to find git root: %w", err)
 	}
-	configFile, err := syncer.DefaultFindConfigFile(gr)
+	configFile, err := configloader.DefaultFindConfigFile(gr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find config file at default locations: %w", err)
 	}
@@ -208,7 +211,7 @@ func changeToGitRoot(ctx context.Context, g git.Git) (func() error, error) {
 	}, nil
 }
 
-func generateSyncFile(ctx context.Context, logger *zapctx.Logger, rc *syncer.RootConfig, syncFilePath string) error {
+func generateSyncFile(ctx context.Context, logger *zapctx.Logger, rc *config.Root, syncFilePath string) error {
 	logger.Debug(ctx, "Creating syncer program")
 	// 3. Create a syncer program there (sync.go)
 	var syncerProg bytes.Buffer
@@ -241,10 +244,10 @@ import (
 {{ range $val := .Children }}
      _ "{{$val.SourceWithoutVersion}}"
 {{- end }}
-	"github.com/getsyncer/syncer-core/syncer"
+	"github.com/getsyncer/syncer-core/syncerexec"
 )
 
 func main() {
-	syncer.FromCli(syncer.DefaultFxOptions())
+	syncerexec.FromCli(syncerexec.DefaultFxOptions())
 }
 `

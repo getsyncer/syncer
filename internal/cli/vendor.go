@@ -5,15 +5,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/getsyncer/syncer-core/config/configloader"
+
 	"github.com/cresta/zapctx"
 	"github.com/getsyncer/syncer-core/git"
-	"github.com/getsyncer/syncer-core/syncer"
 	"github.com/spf13/cobra"
 )
 
 type vendorCmd struct {
 	git    git.Git
-	loader syncer.ConfigLoader
+	loader configloader.ConfigLoader
 	logger *zapctx.Logger
 }
 
@@ -75,7 +76,7 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 	return nil
 }
 
-func newVendorCommand(logger *zapctx.Logger, git git.Git, loader syncer.ConfigLoader) *vendorCmd {
+func newVendorCommand(logger *zapctx.Logger, git git.Git, loader configloader.ConfigLoader) *vendorCmd {
 	return &vendorCmd{
 		git:    git,
 		loader: loader,
