@@ -2,6 +2,6 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base",
-    "local>getsyncer/syncer-core:.renovate-autogen.json"
+    "local>getsyncer/syncer:.renovate-autogen.json"
   ]
 }
