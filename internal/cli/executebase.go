@@ -238,10 +238,10 @@ const defaultSyncerFile = `//go:build syncer
 package main
 
 import (
-{{ range $val := .Logic }}
+{{- range $val := .Logic }}
      _ "{{$val.SourceWithoutVersion}}"
 {{- end }}
-{{ range $val := .Children }}
+{{- range $val := .Children }}
      _ "{{$val.SourceWithoutVersion}}"
 {{- end }}
 	"github.com/getsyncer/syncer-core/syncerexec"
