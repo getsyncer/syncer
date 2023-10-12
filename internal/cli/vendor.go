@@ -13,18 +13,21 @@ import (
 )
 
 type vendorCmd struct {
-	git    git.Git
-	loader configloader.ConfigLoader
-	logger *zapctx.Logger
+	git          git.Git
+	loader       configloader.ConfigLoader
+	logger       *zapctx.Logger
+	useRootGoMod bool
 }
 
 func (r *vendorCmd) MakeCobraCommand() *cobra.Command {
-	return &cobra.Command{
+	ret := &cobra.Command{
 		Use:   "vendor",
 		Short: "Execute a sync, modifying any files that need to be modified",
 		RunE:  r.RunE,
 		Args:  cobra.NoArgs,
 	}
+	ret.Flags().BoolVar(&r.useRootGoMod, "use-root-go-mod", true, "If true and a root go.mod exists, will use that instead of creating a new one")
+	return ret
 }
 
 func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
@@ -69,7 +72,7 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 			return fmt.Errorf("failed to stat go.mod file: %w", err)
 		}
 		// 4. If there is no go.mod file, run `go mod init syncer`
-		if err := initGoModAndImport(ctx, r.logger, rc, ".syncer"); err != nil {
+		if err := initGoModAndImport(ctx, r.logger, rc, ".syncer", r.useRootGoMod); err != nil {
 			return fmt.Errorf("failed to setup go.mod file: %w", err)
 		}
 	}
