@@ -64,7 +64,7 @@ func (r *executeBase) Execute(ctx context.Context, execCmd string, extraEnv stri
 	}
 	r.logger.Debug(ctx, "Running syncer program", zap.String("path", syncerBinaryPath))
 	// Dynamic go build with tag "syncer"
-	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", syncerBinaryPath, "sync.go").WithDir(wd).Run(ctx); err != nil {
+	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", syncerBinaryPath, drift.DefaultSyncerMainFile).WithDir(wd).Run(ctx); err != nil {
 		return fmt.Errorf("failed to build syncer: %w", err)
 	}
 	execEnv := envWithExtraParam(os.Environ(), "SYNCER_EXEC_CMD", execCmd)
@@ -194,7 +194,7 @@ func loadSyncerFile(ctx context.Context, g git.Git, loader configloader.ConfigLo
 		return nil, fmt.Errorf("failed to find config file at default locations: %w", err)
 	}
 	if configFile == "" {
-		return nil, fmt.Errorf("no config file found")
+		return nil, fmt.Errorf("no config file found inside %s", gr)
 	}
 	b, err := os.ReadFile(configFile)
 	if err != nil {
@@ -225,7 +225,7 @@ func changeToGitRoot(ctx context.Context, g git.Git) (func() error, error) {
 }
 
 func generateSyncFile(ctx context.Context, logger *zapctx.Logger, rc *config.Root, syncFilePath string) error {
-	logger.Debug(ctx, "Creating syncer program")
+	logger.Debug(ctx, "Creating syncer program", zap.String("path", syncFilePath))
 	// 3. Create a syncer program there (sync.go)
 	var syncerProg bytes.Buffer
 	data := syncerTemplateData{
