@@ -65,16 +65,19 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("failed to generate sync file: %w", err)
 	}
 	// 3. Look for a go.mod file inside the directory
-	goModFileLoc := filepath.Join(".syncer", "go.mod")
-	_, err = os.Stat(goModFileLoc)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return fmt.Errorf("failed to stat go.mod file: %w", err)
+	useExistingGoMod := r.useRootGoMod
+	if useExistingGoMod {
+		// If there is no root go mod, then we cannot use an existing one
+		if _, err := os.Stat("go.mod"); err != nil {
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("failed to stat go.mod file: %w", err)
+			}
+			useExistingGoMod = false
 		}
-		// 4. If there is no go.mod file, run `go mod init syncer`
-		if err := initGoModAndImport(ctx, r.logger, rc, ".syncer", r.useRootGoMod); err != nil {
-			return fmt.Errorf("failed to setup go.mod file: %w", err)
-		}
+	}
+	// 4. If there is no go.mod file, run `go mod init syncer`
+	if err := initGoModAndImport(ctx, r.logger, rc, ".syncer", useExistingGoMod); err != nil {
+		return fmt.Errorf("failed to setup go.mod file: %w", err)
 	}
 	return nil
 }
