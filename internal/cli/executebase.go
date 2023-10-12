@@ -160,9 +160,16 @@ func initGoModAndImport(ctx context.Context, logger *zapctx.Logger, rc *config.R
 	if err := generateSyncFile(ctx, logger, rc, filepath.Join(td, "sync.go")); err != nil {
 		return fmt.Errorf("failed to generate syncer program: %w", err)
 	}
+	sourcesToGet := make([]string, 0, len(rc.Logic)+len(rc.Children))
 	for _, l := range rc.Logic {
-		logger.Debug(ctx, "Running go get", zap.String("package", l.Source))
-		if err := pipe.NewPiped("go", "get", l.Source).WithDir(td).Run(ctx); err != nil {
+		sourcesToGet = append(sourcesToGet, l.Source)
+	}
+	for _, l := range rc.Children {
+		sourcesToGet = append(sourcesToGet, l.Source)
+	}
+	for _, source := range sourcesToGet {
+		logger.Debug(ctx, "Running go get", zap.String("package", source))
+		if err := pipe.NewPiped("go", "get", source).WithDir(td).Run(ctx); err != nil {
 			return fmt.Errorf("failed to run go get")
 		}
 	}
