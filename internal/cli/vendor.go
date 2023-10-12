@@ -63,7 +63,6 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("failed to find syncer file: %w", err)
 	}
 	// 2. Generate sync.go file with correct imports
-	fmt.Println("a", filepath.Join(drift.DefaultSyncerDirectory, drift.DefaultSyncerMainFile))
 	if err := generateSyncFile(ctx, r.logger, rc, filepath.Join(drift.DefaultSyncerDirectory, drift.DefaultSyncerMainFile)); err != nil {
 		return fmt.Errorf("failed to generate sync file: %w", err)
 	}
