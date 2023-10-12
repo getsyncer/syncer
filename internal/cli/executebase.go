@@ -125,9 +125,9 @@ func tempPathForSyncer() (string, error) {
 
 func setupSync(ctx context.Context, logger *zapctx.Logger, rc *config.Root) (string, func() error, error) {
 	// If there is a vendored sync file, do nothing
-	vendoredFileLoc := filepath.Join(".syncer", "sync.go")
+	vendoredFileLoc := filepath.Join(drift.DefaultSyncerDirectory, drift.DefaultSyncerMainFile)
 	if _, err := os.Stat(vendoredFileLoc); err == nil {
-		return ".syncer", func() error { return nil }, nil
+		return drift.DefaultSyncerDirectory, func() error { return nil }, nil
 	}
 
 	// 2. Make a temp subdirectory
@@ -157,7 +157,7 @@ func initGoModAndImport(ctx context.Context, logger *zapctx.Logger, rc *config.R
 		}
 	}
 	logger.Debug(ctx, "Creating syncer program")
-	if err := generateSyncFile(ctx, logger, rc, filepath.Join(td, "sync.go")); err != nil {
+	if err := generateSyncFile(ctx, logger, rc, filepath.Join(td, drift.DefaultSyncerMainFile)); err != nil {
 		return fmt.Errorf("failed to generate syncer program: %w", err)
 	}
 	sourcesToGet := make([]string, 0, len(rc.Logic)+len(rc.Children))

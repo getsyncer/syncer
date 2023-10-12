@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/getsyncer/syncer-core/git"
-
 	"github.com/cresta/zapctx"
+	"github.com/getsyncer/syncer-core/drift"
+	"github.com/getsyncer/syncer-core/git"
 	"github.com/spf13/cobra"
 )
 
@@ -37,18 +37,18 @@ func (r *unvendorCmd) RunE(cmd *cobra.Command, _ []string) error {
 		}
 	}()
 	// Check for sync.go file
-	exists, err := removeIfExist(filepath.Join(".syncer", "sync.go"))
+	exists, err := removeIfExist(filepath.Join(drift.DefaultSyncerDirectory, drift.DefaultSyncerMainFile))
 	if err != nil {
 		return fmt.Errorf("failed to remove sync.go: %w", err)
 	}
 	if !exists {
 		return nil
 	}
-	_, err = removeIfExist(filepath.Join(".syncer", "go.mod"))
+	_, err = removeIfExist(filepath.Join(drift.DefaultSyncerDirectory, "go.mod"))
 	if err != nil {
 		return fmt.Errorf("failed to remove go.mod: %w", err)
 	}
-	_, err = removeIfExist(filepath.Join(".syncer", "go.sum"))
+	_, err = removeIfExist(filepath.Join(drift.DefaultSyncerDirectory, "go.sum"))
 	if err != nil {
 		return fmt.Errorf("failed to remove go.sum: %w", err)
 	}
