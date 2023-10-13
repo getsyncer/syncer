@@ -62,7 +62,7 @@ func (r *executeBase) Execute(ctx context.Context, execCmd string, extraEnv stri
 	if err != nil {
 		return fmt.Errorf("failed to get temp path for syncer: %w", err)
 	}
-	r.logger.Debug(ctx, "Running syncer program", zap.String("path", syncerBinaryPath))
+	r.logger.Debug(ctx, "Running syncer program", zap.String("path", syncerBinaryPath), zap.String("wd", wd))
 	// Dynamic go build with tag "syncer"
 	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", syncerBinaryPath, drift.DefaultSyncerMainFile).WithDir(wd).Run(ctx); err != nil {
 		return fmt.Errorf("failed to build syncer: %w", err)
