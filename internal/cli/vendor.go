@@ -45,13 +45,13 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 	}()
 	// General steps:
 	// 0. Go to git root directory
-	// 1. Make DefaultSyncerDirectory directory
-	fs, err := os.Stat(drift.DefaultSyncerDirectory)
+	// 1. Make DefaultSyncerGeneratedGoDirectory directory
+	fs, err := os.Stat(drift.DefaultSyncerGeneratedGoDirectory)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return fmt.Errorf("failed to stat .syncer directory: %w", err)
 		}
-		if err := os.Mkdir(drift.DefaultSyncerDirectory, 0755); err != nil {
+		if err := os.Mkdir(drift.DefaultSyncerGeneratedGoDirectory, 0755); err != nil {
 			return fmt.Errorf("failed to make .syncer directory: %w", err)
 		}
 	} else if !fs.IsDir() {
@@ -63,7 +63,7 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 		return fmt.Errorf("failed to find syncer file: %w", err)
 	}
 	// 2. Generate sync.go file with correct imports
-	if err := generateSyncFile(ctx, r.logger, rc, filepath.Join(drift.DefaultSyncerDirectory, drift.DefaultSyncerMainFile)); err != nil {
+	if err := generateSyncFile(ctx, r.logger, rc, filepath.Join(drift.DefaultSyncerGeneratedGoDirectory, drift.DefaultSyncerGeneratedGoFilename)); err != nil {
 		return fmt.Errorf("failed to generate sync file: %w", err)
 	}
 	// 3. Look for a go.mod file inside the directory
@@ -78,7 +78,7 @@ func (r *vendorCmd) RunE(cmd *cobra.Command, _ []string) (retErr error) {
 		}
 	}
 	// 4. If there is no go.mod file, run `go mod init syncer`
-	if err := initGoModAndImport(ctx, r.logger, rc, drift.DefaultSyncerDirectory, useExistingGoMod); err != nil {
+	if err := initGoModAndImport(ctx, r.logger, rc, drift.DefaultSyncerGeneratedGoDirectory, useExistingGoMod); err != nil {
 		return fmt.Errorf("failed to setup go.mod file: %w", err)
 	}
 	return nil

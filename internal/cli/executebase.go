@@ -64,7 +64,7 @@ func (r *executeBase) Execute(ctx context.Context, execCmd string, extraEnv stri
 	}
 	r.logger.Debug(ctx, "Running syncer program", zap.String("path", syncerBinaryPath), zap.String("wd", wd))
 	// Dynamic go build with tag "syncer"
-	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", syncerBinaryPath, drift.DefaultSyncerMainFile).WithDir(wd).Run(ctx); err != nil {
+	if err := pipe.NewPiped("go", "build", "-tags", "syncer", "-o", syncerBinaryPath, drift.DefaultSyncerGeneratedGoFilename).WithDir(wd).Run(ctx); err != nil {
 		return fmt.Errorf("failed to build syncer: %w", err)
 	}
 	execEnv := envWithExtraParam(os.Environ(), "SYNCER_EXEC_CMD", execCmd)
@@ -125,9 +125,9 @@ func tempPathForSyncer() (string, error) {
 
 func setupSync(ctx context.Context, logger *zapctx.Logger, rc *config.Root) (string, func() error, error) {
 	// If there is a vendored sync file, do nothing
-	vendoredFileLoc := filepath.Join(drift.DefaultSyncerDirectory, drift.DefaultSyncerMainFile)
+	vendoredFileLoc := filepath.Join(drift.DefaultSyncerGeneratedGoDirectory, drift.DefaultSyncerGeneratedGoFilename)
 	if _, err := os.Stat(vendoredFileLoc); err == nil {
-		return drift.DefaultSyncerDirectory, func() error { return nil }, nil
+		return drift.DefaultSyncerGeneratedGoDirectory, func() error { return nil }, nil
 	}
 
 	// 2. Make a temp subdirectory
@@ -139,7 +139,6 @@ func setupSync(ctx context.Context, logger *zapctx.Logger, rc *config.Root) (str
 	cleanup := func() error {
 		return os.RemoveAll(td)
 	}
-	logger.Debug(ctx, "Running go mod init")
 	if err := initGoModAndImport(ctx, logger, rc, td, false); err != nil {
 		return "", cleanup, fmt.Errorf("failed to setup syncer directory: %w", err)
 	}
@@ -157,7 +156,7 @@ func initGoModAndImport(ctx context.Context, logger *zapctx.Logger, rc *config.R
 		}
 	}
 	logger.Debug(ctx, "Creating syncer program")
-	if err := generateSyncFile(ctx, logger, rc, filepath.Join(td, drift.DefaultSyncerMainFile)); err != nil {
+	if err := generateSyncFile(ctx, logger, rc, filepath.Join(td, drift.DefaultSyncerGeneratedGoFilename)); err != nil {
 		return fmt.Errorf("failed to generate syncer program: %w", err)
 	}
 	sourcesToGet := make([]string, 0, len(rc.Logic)+len(rc.Children))
@@ -225,7 +224,7 @@ func changeToGitRoot(ctx context.Context, g git.Git) (func() error, error) {
 }
 
 func generateSyncFile(ctx context.Context, logger *zapctx.Logger, rc *config.Root, syncFilePath string) error {
-	logger.Debug(ctx, "Creating syncer program", zap.String("path", syncFilePath))
+	logger.Debug(ctx, "generateSyncFile", zap.String("path", syncFilePath))
 	// 3. Create a syncer program there (sync.go)
 	var syncerProg bytes.Buffer
 	data := syncerTemplateData{
