@@ -4,15 +4,16 @@ name: Test for sync changes
 on:
   push:
     branches:
-      - 
+      - main
   pull_request:
     branches:
-      - 
+      - main
   workflow_dispatch: {}
 
 jobs:
-  build:
+  check:
     name: Check for changes
+    if: github.event_name != 'pull_request' || github.actor != 'renovate[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -21,3 +22,23 @@ jobs:
         uses: getsyncer/action-syncer/checkpr@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  fix:
+    name: Fix any sync changes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.actor == 'renovate[bot]'
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: generate_token
+        with:
+          app-id: ${{ vars.SYNCER_APP_ID }}
+          private-key: ${{ secrets.SYNCER_APP_PEM }}
+      - name: Check out code (with token)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Push back any changes
+        uses: getsyncer/action-syncer/updatepr@main
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
