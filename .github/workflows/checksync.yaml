@@ -26,7 +26,7 @@ jobs:
     name: Fix any sync changes
     needs: check
     runs-on: ubuntu-latest
-    if: ${{ !canceled() && needs.check.result == 'failure' && github.event_name == 'pull_request' && github.actor == 'renovate[bot]' }}
+    if: ${{ !cancelled() && needs.check.result == 'failure' && github.event_name == 'pull_request' && github.actor == 'renovate[bot]' }}
     steps:
       - uses: actions/create-github-app-token@v1
         id: generate_token
