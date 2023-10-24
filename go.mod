@@ -6,7 +6,7 @@ require (
 	github.com/cresta/pipe v0.0.1
 	github.com/cresta/zapctx v0.0.3
 	github.com/getsyncer/public-sync-modules v1.31.3
-	github.com/getsyncer/syncer-core v1.15.11
+	github.com/getsyncer/syncer-core v1.15.12
 	github.com/spf13/cobra v1.7.0
 	go.uber.org/fx v1.20.1
 	go.uber.org/zap v1.26.0
