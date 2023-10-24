@@ -13,7 +13,6 @@ on:
 jobs:
   check:
     name: Check for changes
-    if: github.event_name != 'pull_request' || github.actor != 'renovate[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -25,8 +24,9 @@ jobs:
 
   fix:
     name: Fix any sync changes
+    needs: check
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.actor == 'renovate[bot]'
+    if: ${{ !canceled() && needs.check.result == 'failure' && github.event_name == 'pull_request' && github.actor == 'renovate[bot]' }}
     steps:
       - uses: actions/create-github-app-token@v1
         id: generate_token
