@@ -3,6 +3,7 @@
 	"ignorePaths": [
 		".github/workflows/buildgo.yaml",
 		".github/workflows/checksync.yaml",
+		".github/workflows/commitlint.yaml",
 		".github/workflows/goreleaser.yaml",
 		".github/workflows/lintworkflows.yaml",
 		".github/workflows/watchsynccomment.yaml",
