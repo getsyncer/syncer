@@ -7,7 +7,7 @@ require (
 	github.com/cresta/zapctx v0.0.3
 	github.com/getsyncer/public-sync-modules v1.32.1
 	github.com/getsyncer/syncer-core v1.15.18
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	go.uber.org/fx v1.22.0
 	go.uber.org/zap v1.27.0
 )
