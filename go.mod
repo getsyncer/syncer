@@ -8,7 +8,7 @@ require (
 	github.com/getsyncer/public-sync-modules v1.32.1
 	github.com/getsyncer/syncer-core v1.15.18
 	github.com/spf13/cobra v1.8.1
-	go.uber.org/fx v1.22.1
+	go.uber.org/fx v1.22.2
 	go.uber.org/zap v1.27.0
 )
 
@@ -43,7 +43,7 @@ require (
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	go.uber.org/dig v1.17.1 // indirect
+	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/mod v0.13.0 // indirect
