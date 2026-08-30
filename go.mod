@@ -9,7 +9,7 @@ require (
 	github.com/getsyncer/syncer-core v1.15.18
 	github.com/spf13/cobra v1.8.1
 	go.uber.org/fx v1.23.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.28.0
 )
 
 require (
